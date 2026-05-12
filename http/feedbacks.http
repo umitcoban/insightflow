@@ -1,0 +1,89 @@
+### Create feedback
+POST http://localhost:8080/api/v1/feedbacks
+Content-Type: application/json
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-create-feedback-001
+
+{
+  "source": "MANUAL",
+  "title": "Premium purchase is not activated",
+  "content": "Customer says they purchased premium but the account still shows free plan.",
+  "priority": "HIGH",
+  "metadata": {
+    "platform": "android",
+    "appVersion": "1.0.0",
+    "country": "TR"
+  }
+}
+
+### List feedbacks
+GET http://localhost:8080/api/v1/feedbacks
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-001
+
+### List feedbacks by status
+GET http://localhost:8080/api/v1/feedbacks?status=NEW
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-status-001
+
+### List feedbacks by priority
+GET http://localhost:8080/api/v1/feedbacks?priority=HIGH
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-priority-001
+
+### Missing tenant header
+GET http://localhost:8080/api/v1/feedbacks
+X-Correlation-Id: demo-missing-tenant-header-001
+
+### Wrong tenant slug
+GET http://localhost:8080/api/v1/feedbacks
+X-Tenant-Slug: unknown-company
+X-Correlation-Id: demo-wrong-tenant-001
+
+### List feedbacks paginated
+GET http://localhost:8080/api/v1/feedbacks?page=0&size=10
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-page-001
+
+### List feedbacks paginated by status
+GET http://localhost:8080/api/v1/feedbacks?status=NEW&page=0&size=10
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-status-page-001
+
+### List feedbacks paginated by priority
+GET http://localhost:8080/api/v1/feedbacks?priority=HIGH&page=0&size=10
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-priority-page-001
+
+### List feedbacks with too large size, should be capped to 100
+GET http://localhost:8080/api/v1/feedbacks?page=0&size=1000
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-size-cap-001
+
+--
+
+### Invalid feedback status query parameter
+GET http://localhost:8080/api/v1/feedbacks?status=WRONG
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-invalid-status-param-001
+
+### Invalid feedback id path variable
+GET http://localhost:8080/api/v1/feedbacks/not-a-uuid
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-invalid-feedback-id-001
+
+### Invalid feedback source in request body
+POST http://localhost:8080/api/v1/feedbacks
+Content-Type: application/json
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-invalid-feedback-source-001
+
+{
+  "source": "UNKNOWN",
+  "title": "Invalid enum test",
+  "content": "This request should fail because source enum is invalid.",
+  "priority": "HIGH",
+  "metadata": {
+    "platform": "android"
+  }
+}

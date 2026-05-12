@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:18.0-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: insightflow
+      POSTGRES_USER: insightflow
+      POSTGRES_PASSWORD: insightflow
+    volumes:
+      - insightflow-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U insightflow -d insightflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  insightflow-postgres-data:

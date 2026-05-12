@@ -1,0 +1,2 @@
+-- Initial schema placeholder.
+-- Real tables will be added in the next steps.
