@@ -1,0 +1,34 @@
+### Create customer
+POST http://localhost:8080/api/v1/customers
+Content-Type: application/json
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-create-customer-001
+
+{
+  "externalId": "customer-1001",
+  "email": "USER1001@example.com",
+  "fullName": "User 1001",
+  "plan": "PREMIUM"
+}
+
+### List customers
+GET http://localhost:8080/api/v1/customers?page=0&size=10
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-customers-001
+
+### Duplicate customer by external id or email
+POST http://localhost:8080/api/v1/customers
+Content-Type: application/json
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-duplicate-customer-001
+
+{
+  "externalId": "customer-1001",
+  "email": "user1001@example.com",
+  "fullName": "Duplicate User",
+  "plan": "FREE"
+}
+
+### Missing tenant header
+GET http://localhost:8080/api/v1/customers
+X-Correlation-Id: demo-customers-missing-tenant-001

@@ -6,6 +6,8 @@ import com.umityasincoban.insightflow.shared.tenancy.TenantNotResolvedException;
 import com.umityasincoban.insightflow.tenancy.application.TenantAlreadyExistsException;
 import com.umityasincoban.insightflow.tenancy.application.TenantInactiveException;
 import com.umityasincoban.insightflow.tenancy.application.TenantNotFoundException;
+import com.umityasincoban.insightflow.customer.application.CustomerAlreadyExistsException;
+import com.umityasincoban.insightflow.customer.application.CustomerNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
@@ -204,6 +206,44 @@ public class GlobalExceptionHandler {
 		problemDetail.setType(URI.create("https://insightflow.dev/problems/invalid-request-body"));
 		problemDetail.setInstance(URI.create(request.getRequestURI()));
 		problemDetail.setProperty("errorCode", "INVALID_REQUEST_BODY");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
+	@ExceptionHandler(CustomerAlreadyExistsException.class)
+	public ProblemDetail handleCustomerAlreadyExists(
+			CustomerAlreadyExistsException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.CONFLICT,
+				exception.getMessage()
+		);
+		
+		problemDetail.setTitle("Customer already exists");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/customer-already-exists"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "CUSTOMER_ALREADY_EXISTS");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
+	@ExceptionHandler(CustomerNotFoundException.class)
+	public ProblemDetail handleCustomerNotFound(
+			CustomerNotFoundException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.NOT_FOUND,
+				exception.getMessage()
+		);
+		
+		problemDetail.setTitle("Customer not found");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/customer-not-found"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "CUSTOMER_NOT_FOUND");
 		addCommonProperties(problemDetail);
 		
 		return problemDetail;
