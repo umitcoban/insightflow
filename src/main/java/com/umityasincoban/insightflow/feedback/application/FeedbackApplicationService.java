@@ -6,7 +6,8 @@ import com.umityasincoban.insightflow.feedback.domain.FeedbackId;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackPriority;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackRepository;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackSource;
-import com.umityasincoban.insightflow.feedback.domain.FeedbackStatus;
+import com.umityasincoban.insightflow.customer.application.CustomerNotFoundException;
+import com.umityasincoban.insightflow.customer.domain.CustomerRepository;
 import com.umityasincoban.insightflow.shared.tenancy.CurrentTenantProvider;
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,12 +24,15 @@ public class FeedbackApplicationService {
 	
 	private final FeedbackRepository feedbackRepository;
 	private final CurrentTenantProvider currentTenantProvider;
+	private final CustomerRepository customerRepository;
 	
 	public FeedbackApplicationService(
 			FeedbackRepository feedbackRepository,
+			CustomerRepository customerRepository,
 			CurrentTenantProvider currentTenantProvider
 	) {
 		this.feedbackRepository = feedbackRepository;
+		this.customerRepository = customerRepository;
 		this.currentTenantProvider = currentTenantProvider;
 	}
 	
@@ -44,9 +47,11 @@ public class FeedbackApplicationService {
 	) {
 		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
 		
+		CustomerId resolvedCustomerId = resolveCustomerId(tenantId, customerId);
+		
 		return feedbackRepository.saveNew(
 				tenantId,
-				customerId == null ? null : CustomerId.of(customerId),
+				resolvedCustomerId,
 				source,
 				title,
 				content,
@@ -93,5 +98,24 @@ public class FeedbackApplicationService {
 						FeedbackId.of(feedbackId)
 				)
 				.orElseThrow(() -> new FeedbackNotFoundException(feedbackId));
+	}
+	
+	private CustomerId resolveCustomerId(TenantId tenantId, UUID customerId) {
+		if (customerId == null) {
+			return null;
+		}
+		
+		CustomerId resolvedCustomerId = CustomerId.of(customerId);
+		
+		boolean customerExistsForTenant = customerRepository.existsByTenantIdAndId(
+				tenantId,
+				resolvedCustomerId
+		);
+		
+		if (!customerExistsForTenant) {
+			throw new CustomerNotFoundException(customerId);
+		}
+		
+		return resolvedCustomerId;
 	}
 }
