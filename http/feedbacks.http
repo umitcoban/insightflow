@@ -230,3 +230,20 @@ X-Correlation-Id: demo-create-feedback-ai-enrichment-001
 GET http://localhost:8080/api/v1/feedbacks?page=0&size=5
 X-Tenant-Slug: acme
 X-Correlation-Id: demo-list-feedbacks-after-ai-001
+
+### Create feedback, trigger AI enrichment and AI completed event
+POST http://localhost:8080/api/v1/feedbacks
+Content-Type: application/json
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-create-feedback-ai-completed-event-001
+
+{
+  "source": "MANUAL",
+  "title": "Premium restore failed again",
+  "content": "Customer says restore purchase failed and premium features are still locked.",
+  "priority": "HIGH",
+  "metadata": {
+    "platform": "ios",
+    "appVersion": "1.0.8"
+  }
+}
