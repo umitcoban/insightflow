@@ -4,8 +4,10 @@ import com.umityasincoban.insightflow.outbox.domain.OutboxEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Profile;
 
 @Component
+@Profile("local-log-publisher")
 public class LoggingOutboxEventPublisher implements OutboxEventPublisher {
 	
 	private static final Logger log = LoggerFactory.getLogger(LoggingOutboxEventPublisher.class);

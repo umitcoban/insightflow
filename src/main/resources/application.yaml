@@ -18,8 +18,30 @@ spring:
         format_sql: true
   flyway:
     enabled: true
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      client-id: insightflow-api
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        enable.idempotence: true
+        acks: all
+        retries: 10
+    consumer:
+      group-id: insightflow-domain-events-consumer
+      client-id: insightflow-api-consumer
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
 
 insightflow:
+  kafka:
+    topics:
+      domain-events: insightflow.domain-events
   outbox:
     publisher:
       max-retry-count: 3
