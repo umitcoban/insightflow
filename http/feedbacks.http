@@ -123,3 +123,20 @@ X-Correlation-Id: demo-create-feedback-missing-customer-001
     "platform": "web"
   }
 }
+
+### Create feedback and outbox event
+POST http://localhost:8080/api/v1/feedbacks
+Content-Type: application/json
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-create-feedback-outbox-001
+
+{
+  "source": "MANUAL",
+  "title": "Login button does not work",
+  "content": "Customer says the login button does not respond after the latest app update.",
+  "priority": "HIGH",
+  "metadata": {
+    "platform": "android",
+    "appVersion": "1.0.2"
+  }
+}

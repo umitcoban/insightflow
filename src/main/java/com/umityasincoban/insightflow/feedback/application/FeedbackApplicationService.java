@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import com.umityasincoban.insightflow.feedback.domain.FeedbackEvents;
+import com.umityasincoban.insightflow.outbox.application.OutboxPayloadFactory;
+import com.umityasincoban.insightflow.outbox.domain.OutboxEventRepository;
 
 import java.util.Map;
 import java.util.UUID;
@@ -25,15 +28,18 @@ public class FeedbackApplicationService {
 	private final FeedbackRepository feedbackRepository;
 	private final CurrentTenantProvider currentTenantProvider;
 	private final CustomerRepository customerRepository;
+	private final OutboxEventRepository outboxEventRepository;
 	
 	public FeedbackApplicationService(
 			FeedbackRepository feedbackRepository,
 			CustomerRepository customerRepository,
-			CurrentTenantProvider currentTenantProvider
+			CurrentTenantProvider currentTenantProvider,
+			OutboxEventRepository outboxEventRepository
 	) {
 		this.feedbackRepository = feedbackRepository;
 		this.customerRepository = customerRepository;
 		this.currentTenantProvider = currentTenantProvider;
+		this.outboxEventRepository = outboxEventRepository;
 	}
 	
 	@Transactional
@@ -49,7 +55,7 @@ public class FeedbackApplicationService {
 		
 		CustomerId resolvedCustomerId = resolveCustomerId(tenantId, customerId);
 		
-		return feedbackRepository.saveNew(
+		Feedback feedback = feedbackRepository.saveNew(
 				tenantId,
 				resolvedCustomerId,
 				source,
@@ -58,6 +64,17 @@ public class FeedbackApplicationService {
 				priority,
 				metadata
 		);
+		
+		outboxEventRepository.savePendingEvent(
+				tenantId,
+				FeedbackEvents.AGGREGATE_TYPE,
+				feedback.getId().value(),
+				FeedbackEvents.FEEDBACK_CREATED,
+				FeedbackEvents.FEEDBACK_CREATED_VERSION,
+				OutboxPayloadFactory.feedbackCreatedPayload(feedback)
+		);
+		
+		return feedback;
 	}
 	
 	@Transactional(readOnly = true)
