@@ -19,6 +19,11 @@ spring:
   flyway:
     enabled: true
 
+insightflow:
+  outbox:
+    publisher:
+      fixed-delay-ms: 5000
+
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [correlationId=%X{correlationId:-none}] [tenant=%X{tenantSlug:-none}] %logger{36} - %msg%n"

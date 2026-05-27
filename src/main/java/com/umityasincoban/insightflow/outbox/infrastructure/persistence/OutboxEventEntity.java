@@ -134,4 +134,16 @@ public class OutboxEventEntity {
 	public OffsetDateTime getPublishedAt() {
 		return publishedAt;
 	}
+	
+	public void markAsPublished() {
+		this.status = OutboxEventStatus.PUBLISHED;
+		this.publishedAt = OffsetDateTime.now();
+		this.lastError = null;
+	}
+	
+	public void markAsFailed(String errorMessage) {
+		this.status = OutboxEventStatus.FAILED;
+		this.retryCount = this.retryCount + 1;
+		this.lastError = errorMessage;
+	}
 }
