@@ -208,3 +208,25 @@ X-Correlation-Id: demo-create-feedback-consumer-001
     "appVersion": "1.0.6"
   }
 }
+
+### Create feedback and trigger mock AI enrichment
+POST http://localhost:8080/api/v1/feedbacks
+Content-Type: application/json
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-create-feedback-ai-enrichment-001
+
+{
+  "source": "MANUAL",
+  "title": "Premium restore failed",
+  "content": "Customer restored purchase but premium features are still locked.",
+  "priority": "HIGH",
+  "metadata": {
+    "platform": "ios",
+    "appVersion": "1.0.7"
+  }
+}
+
+### List feedbacks after AI enrichment
+GET http://localhost:8080/api/v1/feedbacks?page=0&size=5
+X-Tenant-Slug: acme
+X-Correlation-Id: demo-list-feedbacks-after-ai-001

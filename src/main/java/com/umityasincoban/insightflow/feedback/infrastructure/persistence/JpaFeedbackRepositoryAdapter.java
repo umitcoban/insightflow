@@ -11,6 +11,9 @@ import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import com.umityasincoban.insightflow.feedback.domain.FeedbackId;
+import com.umityasincoban.insightflow.feedback.domain.FeedbackRiskLevel;
+import com.umityasincoban.insightflow.feedback.domain.FeedbackSentiment;
 
 import java.util.List;
 import java.util.Map;
@@ -87,4 +90,29 @@ public class JpaFeedbackRepositoryAdapter implements FeedbackRepository {
 		return feedbackJpaRepository.findByTenantIdAndPriority(tenantId.value(), priority, pageable)
 				.map(feedbackPersistenceMapper::toDomain);
 	}
+	
+	@Override
+	public void applyAiAnalysis(
+			TenantId tenantId,
+			FeedbackId feedbackId,
+			FeedbackSentiment sentiment,
+			String category,
+			FeedbackRiskLevel riskLevel,
+			String aiSummary,
+			String suggestedAction
+	) {
+		FeedbackEntity entity = feedbackJpaRepository.findByTenantIdAndId(
+				tenantId.value(),
+				feedbackId.value()
+		).orElseThrow();
+		
+		entity.applyAiAnalysis(
+				sentiment,
+				category,
+				riskLevel,
+				aiSummary,
+				suggestedAction
+		);
+	}
+	
 }

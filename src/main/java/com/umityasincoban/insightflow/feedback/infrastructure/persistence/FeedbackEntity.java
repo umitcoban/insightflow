@@ -167,4 +167,19 @@ public class FeedbackEntity {
 	public OffsetDateTime getUpdatedAt() {
 		return updatedAt;
 	}
+	
+	public void applyAiAnalysis(
+			FeedbackSentiment sentiment,
+			String category,
+			FeedbackRiskLevel riskLevel,
+			String aiSummary,
+			String suggestedAction
+	) {
+		this.sentiment = sentiment;
+		this.category = category;
+		this.riskLevel = riskLevel;
+		this.aiSummary = aiSummary;
+		this.suggestedAction = suggestedAction;
+		this.updatedAt = OffsetDateTime.now();
+	}
 }

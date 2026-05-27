@@ -27,4 +27,15 @@ public interface FeedbackRepository {
 	Page<Feedback> findByTenantIdAndStatus(TenantId tenantId, FeedbackStatus status, Pageable pageable);
 	
 	Page<Feedback> findByTenantIdAndPriority(TenantId tenantId, FeedbackPriority priority, Pageable pageable);
+	
+	void applyAiAnalysis(
+			TenantId tenantId,
+			FeedbackId feedbackId,
+			FeedbackSentiment sentiment,
+			String category,
+			FeedbackRiskLevel riskLevel,
+			String aiSummary,
+			String suggestedAction
+	);
+	
 }
