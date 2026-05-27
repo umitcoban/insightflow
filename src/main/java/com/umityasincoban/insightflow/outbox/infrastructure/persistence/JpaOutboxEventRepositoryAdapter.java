@@ -7,6 +7,7 @@ import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,5 +70,13 @@ public class JpaOutboxEventRepositoryAdapter implements OutboxEventRepository {
 				.orElseThrow();
 		
 		entity.markAsFailed(errorMessage);
+	}
+	
+	@Override
+	public void markForRetry(UUID eventId, String errorMessage, OffsetDateTime nextRetryAt) {
+		OutboxEventEntity entity = outboxEventJpaRepository.findById(eventId)
+				.orElseThrow();
+		
+		entity.markForRetry(errorMessage, nextRetryAt);
 	}
 }

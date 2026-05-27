@@ -22,7 +22,8 @@ spring:
 insightflow:
   outbox:
     publisher:
-      fixed-delay-ms: 5000
+      max-retry-count: 3
+      base-delay-seconds: 10
 
 logging:
   pattern:

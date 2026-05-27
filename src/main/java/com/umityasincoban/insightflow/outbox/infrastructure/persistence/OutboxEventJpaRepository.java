@@ -10,13 +10,14 @@ public interface OutboxEventJpaRepository extends JpaRepository<OutboxEventEntit
 	
 	@Query(
 			value = """
-                    select *
-                    from outbox_events
-                    where status = 'PENDING'
-                    order by created_at asc
-                    limit :limit
-                    for update skip locked
-                    """,
+                select *
+                from outbox_events
+                where status = 'PENDING'
+                  and (next_retry_at is null or next_retry_at <= now())
+                order by created_at asc
+                limit :limit
+                for update skip locked
+                """,
 			nativeQuery = true
 	)
 	List<OutboxEventEntity> findPendingEventsForPublishing(int limit);

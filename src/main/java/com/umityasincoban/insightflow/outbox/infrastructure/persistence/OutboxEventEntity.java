@@ -141,9 +141,17 @@ public class OutboxEventEntity {
 		this.lastError = null;
 	}
 	
+	public void markForRetry(String errorMessage, OffsetDateTime nextRetryAt) {
+		this.status = OutboxEventStatus.PENDING;
+		this.retryCount = this.retryCount + 1;
+		this.nextRetryAt = nextRetryAt;
+		this.lastError = errorMessage;
+	}
+	
 	public void markAsFailed(String errorMessage) {
 		this.status = OutboxEventStatus.FAILED;
 		this.retryCount = this.retryCount + 1;
+		this.nextRetryAt = null;
 		this.lastError = errorMessage;
 	}
 }

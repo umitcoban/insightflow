@@ -14,13 +14,16 @@ public class OutboxPublishingService {
 	
 	private final OutboxEventRepository outboxEventRepository;
 	private final OutboxEventPublisher outboxEventPublisher;
+	private final OutboxRetryPolicy outboxRetryPolicy;
 	
 	public OutboxPublishingService(
 			OutboxEventRepository outboxEventRepository,
-			OutboxEventPublisher outboxEventPublisher
+			OutboxEventPublisher outboxEventPublisher,
+			OutboxRetryPolicy outboxRetryPolicy
 	) {
 		this.outboxEventRepository = outboxEventRepository;
 		this.outboxEventPublisher = outboxEventPublisher;
+		this.outboxRetryPolicy = outboxRetryPolicy;
 	}
 	
 	@Transactional
@@ -39,7 +42,24 @@ public class OutboxPublishingService {
 			outboxEventPublisher.publish(event);
 			outboxEventRepository.markAsPublished(event.id());
 		} catch (Exception exception) {
-			outboxEventRepository.markAsFailed(event.id(), exception.getMessage());
+			handlePublishFailure(event, exception);
 		}
+	}
+	
+	private void handlePublishFailure(OutboxEvent event, Exception exception) {
+		String errorMessage = exception.getMessage() == null
+				? exception.getClass().getSimpleName()
+				: exception.getMessage();
+		
+		if (outboxRetryPolicy.shouldRetry(event.retryCount())) {
+			outboxEventRepository.markForRetry(
+					event.id(),
+					errorMessage,
+					outboxRetryPolicy.nextRetryAt(event.retryCount())
+			);
+			return;
+		}
+		
+		outboxEventRepository.markAsFailed(event.id(), errorMessage);
 	}
 }
