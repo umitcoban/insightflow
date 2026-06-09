@@ -1,0 +1,93 @@
+@baseUrl = http://localhost:8080
+@tenantSlug = acme
+
+### Create tenant if needed
+POST {{baseUrl}}/api/v1/tenants
+Content-Type: application/json
+X-Correlation-Id: demo-automation-create-tenant-001
+
+{
+  "slug": "{{tenantSlug}}",
+  "name": "Acme Corporation"
+}
+
+### Create automation rule
+POST {{baseUrl}}/api/v1/automation/rules
+Content-Type: application/json
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-create-automation-rule-001
+
+{
+  "name": "Escalate high risk negative feedback",
+  "description": "Create an internal action when feedback is negative and high risk.",
+  "triggerEventType": "feedback.ai-analysis-completed",
+  "conditionJson": {
+    "sentiment": "NEGATIVE",
+    "riskLevel": "CHURN_RISK",
+    "priority": ["HIGH", "CRITICAL"]
+  },
+  "actionJson": [
+    {
+      "type": "LOG",
+      "message": "High risk negative feedback detected"
+    }
+  ],
+  "priority": 100
+}
+
+### Create automation rule for AI completed event
+POST {{baseUrl}}/api/v1/automation/rules
+Content-Type: application/json
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-create-automation-rule-ai-completed-001
+
+{
+  "name": "Log churn risk negative feedback",
+  "description": "Logs feedbacks that AI marks as churn risk.",
+  "triggerEventType": "feedback.ai-analysis-completed",
+  "conditionJson": {
+    "sentiment": "NEGATIVE",
+    "riskLevel": "CHURN_RISK"
+  },
+  "actionJson": [
+    {
+      "type": "LOG",
+      "message": "Churn risk negative feedback detected"
+    }
+  ],
+  "priority": 100
+}
+
+### Create automation rule with default priority
+POST {{baseUrl}}/api/v1/automation/rules
+Content-Type: application/json
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-create-automation-rule-default-priority-001
+
+{
+  "name": "Log any completed AI analysis",
+  "triggerEventType": "feedback.ai-analysis-completed",
+  "conditionJson": {
+    "status": "NEW"
+  },
+  "actionJson": [
+    {
+      "type": "LOG",
+      "message": "AI analysis completed"
+    }
+  ]
+}
+
+### List automation rules
+GET {{baseUrl}}/api/v1/automation/rules?page=0&size=20
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-list-automation-rules-001
+
+### List automation executions
+GET {{baseUrl}}/api/v1/automation/executions?page=0&size=20
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-list-automation-executions-001
+
+### Missing tenant header
+GET {{baseUrl}}/api/v1/automation/rules?page=0&size=20
+X-Correlation-Id: demo-list-automation-rules-missing-tenant-001

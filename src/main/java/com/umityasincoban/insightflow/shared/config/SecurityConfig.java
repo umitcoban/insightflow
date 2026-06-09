@@ -16,6 +16,8 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/tenants/**").permitAll()
 						.requestMatchers("/api/v1/feedbacks/**").permitAll()
 						.requestMatchers("/api/v1/customers/**").permitAll()
+						.requestMatchers("/api/v1/automation/rules/**").permitAll()
+						.requestMatchers("/api/v1/automation/executions/**").permitAll()
 						.anyRequest().authenticated()
 		)
 		.build();

@@ -42,6 +42,8 @@ insightflow:
   kafka:
     topics:
       domain-events: insightflow.domain-events
+    consumer-groups:
+      automation: insightflow-automation-consumer
   outbox:
     publisher:
       max-retry-count: 3
