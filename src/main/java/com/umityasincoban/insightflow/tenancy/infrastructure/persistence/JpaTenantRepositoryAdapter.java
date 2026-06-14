@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public class JpaTenantRepositoryAdapter implements TenantRepository {
@@ -33,6 +34,12 @@ public class JpaTenantRepositoryAdapter implements TenantRepository {
 	@Override
 	public Optional<Tenant> findBySlug(String slug) {
 		return tenantJpaRepository.findBySlug(slug)
+				.map(tenantPersistenceMapper::toDomain);
+	}
+	
+	@Override
+	public Optional<Tenant> findById(UUID id) {
+		return tenantJpaRepository.findById(id)
 				.map(tenantPersistenceMapper::toDomain);
 	}
 	

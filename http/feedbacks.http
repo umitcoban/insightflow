@@ -1,6 +1,9 @@
+@accessToken = paste-access-token-here
+
 ### Create feedback
 POST http://localhost:8080/api/v1/feedbacks
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: acme
 X-Correlation-Id: demo-create-feedback-001
 
@@ -18,25 +21,30 @@ X-Correlation-Id: demo-create-feedback-001
 
 ### List feedbacks
 GET http://localhost:8080/api/v1/feedbacks
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: acme
 X-Correlation-Id: demo-list-feedbacks-001
 
 ### List feedbacks by status
 GET http://localhost:8080/api/v1/feedbacks?status=NEW
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: acme
 X-Correlation-Id: demo-list-feedbacks-status-001
 
 ### List feedbacks by priority
 GET http://localhost:8080/api/v1/feedbacks?priority=HIGH
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: acme
 X-Correlation-Id: demo-list-feedbacks-priority-001
 
 ### Missing tenant header
 GET http://localhost:8080/api/v1/feedbacks
+Authorization: Bearer {{accessToken}}
 X-Correlation-Id: demo-missing-tenant-header-001
 
 ### Wrong tenant slug
 GET http://localhost:8080/api/v1/feedbacks
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: unknown-company
 X-Correlation-Id: demo-wrong-tenant-001
 

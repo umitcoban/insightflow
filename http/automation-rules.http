@@ -1,11 +1,13 @@
 @baseUrl = http://localhost:8080
 @tenantSlug = acme
+@accessToken = paste-access-token-here
 @ruleId = replace-with-rule-id
 @executionId = replace-with-execution-id
 
 ### Create tenant if needed
 POST {{baseUrl}}/api/v1/tenants
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 X-Correlation-Id: demo-automation-create-tenant-001
 
 {
@@ -16,6 +18,7 @@ X-Correlation-Id: demo-automation-create-tenant-001
 ### Create automation rule
 POST {{baseUrl}}/api/v1/automation/rules
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-create-automation-rule-001
 
@@ -40,6 +43,7 @@ X-Correlation-Id: demo-create-automation-rule-001
 ### Create automation rule for AI completed event
 POST {{baseUrl}}/api/v1/automation/rules
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-create-automation-rule-ai-completed-001
 
@@ -63,6 +67,7 @@ X-Correlation-Id: demo-create-automation-rule-ai-completed-001
 ### Create automation rule with WEBHOOK action
 POST {{baseUrl}}/api/v1/automation/rules
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-create-automation-rule-webhook-001
 
@@ -98,6 +103,7 @@ X-Correlation-Id: demo-create-automation-rule-webhook-001
 ### Create automation rule with default priority
 POST {{baseUrl}}/api/v1/automation/rules
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-create-automation-rule-default-priority-001
 
@@ -117,17 +123,20 @@ X-Correlation-Id: demo-create-automation-rule-default-priority-001
 
 ### List automation rules
 GET {{baseUrl}}/api/v1/automation/rules?page=0&size=20
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-list-automation-rules-001
 
 ### Get automation rule by id
 GET {{baseUrl}}/api/v1/automation/rules/{{ruleId}}
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-get-automation-rule-001
 
 ### Update automation rule
 PATCH {{baseUrl}}/api/v1/automation/rules/{{ruleId}}
 Content-Type: application/json
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-update-automation-rule-001
 
@@ -150,29 +159,35 @@ X-Correlation-Id: demo-update-automation-rule-001
 
 ### Activate automation rule
 POST {{baseUrl}}/api/v1/automation/rules/{{ruleId}}/activate
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-activate-automation-rule-001
 
 ### Deactivate automation rule
 POST {{baseUrl}}/api/v1/automation/rules/{{ruleId}}/deactivate
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-deactivate-automation-rule-001
 
 ### List automation executions
 GET {{baseUrl}}/api/v1/automation/executions?page=0&size=20
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-list-automation-executions-001
 
 ### Get automation execution by id
 GET {{baseUrl}}/api/v1/automation/executions/{{executionId}}
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-get-automation-execution-001
 
 ### List automation action executions
 GET {{baseUrl}}/api/v1/automation/executions/{{executionId}}/actions
+Authorization: Bearer {{accessToken}}
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-list-automation-action-executions-001
 
 ### Missing tenant header
 GET {{baseUrl}}/api/v1/automation/rules?page=0&size=20
+Authorization: Bearer {{accessToken}}
 X-Correlation-Id: demo-list-automation-rules-missing-tenant-001

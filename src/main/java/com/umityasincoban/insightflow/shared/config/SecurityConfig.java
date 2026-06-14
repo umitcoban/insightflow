@@ -1,26 +1,95 @@
 package com.umityasincoban.insightflow.shared.config;
 
+import com.umityasincoban.insightflow.shared.security.InsightFlowJwtAuthenticationConverter;
+import com.umityasincoban.insightflow.shared.security.InsightFlowSecurityProperties;
+import com.umityasincoban.insightflow.shared.security.JsonAccessDeniedHandler;
+import com.umityasincoban.insightflow.shared.security.JsonAuthenticationEntryPoint;
+import com.umityasincoban.insightflow.shared.security.JwtAudienceValidator;
+import com.umityasincoban.insightflow.shared.security.JwtRoleConverter;
+import com.umityasincoban.insightflow.shared.security.SecurityRoles;
+import com.umityasincoban.insightflow.shared.tenancy.TenantContextFilter;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
+import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableConfigurationProperties(InsightFlowSecurityProperties.class)
 public class SecurityConfig {
 	
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		return http.csrf(AbstractHttpConfigurer::disable)	.authorizeHttpRequests(auth ->
-				auth.requestMatchers("/actuator/health").permitAll()
-						.requestMatchers("/api/v1/tenants/**").permitAll()
-						.requestMatchers("/api/v1/feedbacks/**").permitAll()
-						.requestMatchers("/api/v1/customers/**").permitAll()
-						.requestMatchers("/api/v1/automation/rules/**").permitAll()
-						.requestMatchers("/api/v1/automation/executions/**").permitAll()
-						.anyRequest().authenticated()
-		)
-		.build();
+	SecurityFilterChain securityFilterChain(
+			HttpSecurity http,
+			TenantContextFilter tenantContextFilter,
+			JsonAuthenticationEntryPoint authenticationEntryPoint,
+			JsonAccessDeniedHandler accessDeniedHandler
+	) throws Exception {
+		return http
+				.csrf(AbstractHttpConfigurer::disable)
+				.formLogin(AbstractHttpConfigurer::disable)
+				.httpBasic(AbstractHttpConfigurer::disable)
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.exceptionHandling(exceptions -> exceptions
+						.authenticationEntryPoint(authenticationEntryPoint)
+						.accessDeniedHandler(accessDeniedHandler)
+				)
+				.oauth2ResourceServer(oauth2 -> oauth2
+						.authenticationEntryPoint(authenticationEntryPoint)
+						.accessDeniedHandler(accessDeniedHandler)
+						.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+				)
+				.addFilterAfter(tenantContextFilter, BearerTokenAuthenticationFilter.class)
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers("/actuator/health").permitAll()
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/tenants").hasRole(SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/tenants/**").hasRole(SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/feedbacks").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/automation/rules/*").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules/*/activate").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules/*/deactivate").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/feedbacks/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/automation/rules/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/automation/executions/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers("/api/**").authenticated()
+						.anyRequest().denyAll()
+				)
+				.build();
 	}
 	
+	@Bean
+	InsightFlowJwtAuthenticationConverter jwtAuthenticationConverter() {
+		return new InsightFlowJwtAuthenticationConverter(new JwtRoleConverter());
+	}
+	
+	@Bean
+	JwtDecoder jwtDecoder(InsightFlowSecurityProperties securityProperties) {
+		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(securityProperties.getIssuerUri()).build();
+		OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
+				JwtValidators.createDefaultWithIssuer(securityProperties.getIssuerUri()),
+				new JwtAudienceValidator(securityProperties.getAudience())
+		);
+		jwtDecoder.setJwtValidator(validator);
+		return jwtDecoder;
+	}
+	
+	@Bean
+	FilterRegistrationBean<TenantContextFilter> tenantContextFilterRegistration(TenantContextFilter filter) {
+		FilterRegistrationBean<TenantContextFilter> registration = new FilterRegistrationBean<>(filter);
+		registration.setEnabled(false);
+		return registration;
+	}
 }

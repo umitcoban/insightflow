@@ -4,6 +4,7 @@ import com.umityasincoban.insightflow.automation.application.AutomationExecution
 import com.umityasincoban.insightflow.automation.application.AutomationRuleNotFoundException;
 import com.umityasincoban.insightflow.feedback.application.FeedbackNotFoundException;
 import com.umityasincoban.insightflow.shared.observability.CorrelationId;
+import com.umityasincoban.insightflow.shared.tenancy.TenantAccessDeniedException;
 import com.umityasincoban.insightflow.shared.tenancy.TenantNotResolvedException;
 import com.umityasincoban.insightflow.tenancy.application.TenantAlreadyExistsException;
 import com.umityasincoban.insightflow.tenancy.application.TenantInactiveException;
@@ -184,6 +185,25 @@ public class GlobalExceptionHandler {
 		problemDetail.setType(URI.create("https://insightflow.dev/problems/feedback-not-found"));
 		problemDetail.setInstance(URI.create(request.getRequestURI()));
 		problemDetail.setProperty("errorCode", "FEEDBACK_NOT_FOUND");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
+	@ExceptionHandler(TenantAccessDeniedException.class)
+	public ProblemDetail handleTenantAccessDenied(
+			TenantAccessDeniedException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.FORBIDDEN,
+				"Access is denied"
+		);
+		
+		problemDetail.setTitle("Access denied");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/tenant-access-denied"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "TENANT_ACCESS_DENIED");
 		addCommonProperties(problemDetail);
 		
 		return problemDetail;

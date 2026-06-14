@@ -37,8 +37,19 @@ spring:
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
     listener:
       ack-mode: record
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${INSIGHTFLOW_SECURITY_JWT_ISSUER_URI:http://localhost:8081/realms/insightflow}
 
 insightflow:
+  security:
+    jwt:
+      issuer-uri: ${INSIGHTFLOW_SECURITY_JWT_ISSUER_URI:http://localhost:8081/realms/insightflow}
+      audience: ${INSIGHTFLOW_SECURITY_JWT_AUDIENCE:insightflow-api}
+      tenant-id-claim: tenant_id
+      tenant-slug-claim: tenant_slug
   kafka:
     topics:
       domain-events: insightflow.domain-events

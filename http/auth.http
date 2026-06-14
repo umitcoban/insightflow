@@ -1,0 +1,62 @@
+@keycloakUrl = http://localhost:8081
+@baseUrl = http://localhost:8080
+@accessToken = paste-access-token-here
+
+### Development token: acme tenant admin
+# Direct access grants/password grant are development-only. Future frontend login should use Authorization Code + PKCE.
+POST {{keycloakUrl}}/realms/insightflow/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&
+client_id=insightflow-dev-client&
+username=acme-admin&
+password=acme-admin
+
+### Development token: acme support agent
+POST {{keycloakUrl}}/realms/insightflow/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&
+client_id=insightflow-dev-client&
+username=acme-agent&
+password=acme-agent
+
+### Development token: platform admin
+POST {{keycloakUrl}}/realms/insightflow/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&
+client_id=insightflow-dev-client&
+username=platform-admin&
+password=platform-admin
+
+### Platform admin: list tenants
+GET {{baseUrl}}/api/v1/tenants
+Authorization: Bearer {{accessToken}}
+
+### Tenant admin: create customer
+POST {{baseUrl}}/api/v1/customers
+Authorization: Bearer {{accessToken}}
+X-Tenant-Slug: acme
+Content-Type: application/json
+
+{
+  "externalId": "customer-auth-1001",
+  "email": "auth1001@example.com",
+  "fullName": "Auth User 1001",
+  "plan": "PREMIUM"
+}
+
+### Support agent: read automation rules
+GET {{baseUrl}}/api/v1/automation/rules?page=0&size=20
+Authorization: Bearer {{accessToken}}
+X-Tenant-Slug: acme
+
+### Tenant mismatch: expected 403
+GET {{baseUrl}}/api/v1/feedbacks
+Authorization: Bearer {{accessToken}}
+X-Tenant-Slug: beta-soft
+
+### Missing token: expected 401
+GET {{baseUrl}}/api/v1/customers
+X-Tenant-Slug: acme

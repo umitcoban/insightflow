@@ -152,6 +152,7 @@ Current Docker Compose includes:
 
 * PostgreSQL
 * Kafka
+* Keycloak
 
 PostgreSQL runs as:
 
@@ -172,6 +173,23 @@ domain events topic: insightflow.domain-events
 ```
 
 Kafka uses Apache Kafka Docker image in KRaft mode.
+
+Keycloak runs locally through Docker Compose as:
+
+```text
+container: insightflow-keycloak
+host port: 8081
+realm: insightflow
+development admin: admin/admin
+```
+
+The development realm import is version-controlled at:
+
+```text
+docker/keycloak/insightflow-realm.json
+```
+
+Production must not use Keycloak development mode or the embedded development database. Use production mode, persistent supported database storage, real secrets, and proper TLS/proxy configuration.
 
 ## Database and Migration Strategy
 
@@ -243,6 +261,19 @@ The request filter stores the current tenant slug in `TenantContext`.
 `CurrentTenantProvider` resolves the current tenant slug into a real `TenantId` by querying the database.
 
 Tenant-scoped endpoints must use `CurrentTenantProvider` instead of reading headers directly.
+
+Security v1 now uses Keycloak-backed JWT Resource Server authentication. For tenant users, JWT tenant claims are the source of authorization truth:
+
+```text
+tenant_id
+tenant_slug
+realm_access.roles
+aud contains insightflow-api
+```
+
+`X-Tenant-Slug` remains required for tenant-scoped endpoints as an explicit routing/context header, but it must match the JWT `tenant_slug` for `TENANT_ADMIN` and `SUPPORT_AGENT`. Tenant users can never switch tenant by changing the header.
+
+`PLATFORM_ADMIN` may use platform-level tenant administration endpoints without `X-Tenant-Slug`. For tenant-scoped endpoints, platform admins must send `X-Tenant-Slug`; the selected tenant is resolved through the tenant repository.
 
 Important classes:
 
@@ -355,25 +386,49 @@ Do not return raw stack traces or internal exception messages to API clients.
 
 Spring Security is present.
 
-Current `SecurityConfig` temporarily permits API endpoints during development.
+Current `SecurityConfig` configures stateless OAuth2 Resource Server JWT security.
 
-Currently permitted paths include:
+Public paths:
 
 ```text
 /actuator/health
-/api/v1/tenants/**
-/api/v1/customers/**
-/api/v1/feedbacks/**
 ```
 
-When adding new endpoints during development, temporarily permit them if needed.
+Role matrix:
 
-Future work:
+```text
+PLATFORM_ADMIN:
+POST /api/v1/tenants
+GET  /api/v1/tenants/**
 
-* JWT Resource Server
-* tenant claim from JWT
-* role-based authorization
-* platform admin vs tenant admin vs support agent permissions
+TENANT_ADMIN, PLATFORM_ADMIN:
+POST /api/v1/customers
+POST /api/v1/feedbacks
+POST /api/v1/automation/rules
+PATCH /api/v1/automation/rules/{id}
+POST /api/v1/automation/rules/{id}/activate
+POST /api/v1/automation/rules/{id}/deactivate
+
+TENANT_ADMIN, SUPPORT_AGENT, PLATFORM_ADMIN:
+GET /api/v1/customers/**
+GET /api/v1/feedbacks/**
+GET /api/v1/automation/rules/**
+GET /api/v1/automation/executions/**
+```
+
+Unmatched API requests require authentication. Avoid adding temporary `permitAll` rules for business endpoints.
+
+Authentication and authorization failures return JSON ProblemDetail responses with `errorCode`, `timestamp`, and `correlationId`. Spring Security failures are handled by custom `AuthenticationEntryPoint` and `AccessDeniedHandler`, not by controller advice.
+
+Development users in Keycloak:
+
+```text
+platform-admin/platform-admin -> PLATFORM_ADMIN
+acme-admin/acme-admin -> TENANT_ADMIN, tenant_id 11111111-1111-1111-1111-111111111111, tenant_slug acme
+acme-agent/acme-agent -> SUPPORT_AGENT, tenant_id 11111111-1111-1111-1111-111111111111, tenant_slug acme
+```
+
+Use `http/auth.http` to obtain development tokens. Password grant/direct access grant is for local testing only; a future frontend should use Authorization Code + PKCE.
 
 ## Implemented Domain Areas
 
