@@ -48,6 +48,12 @@ insightflow:
     publisher:
       max-retry-count: 3
       base-delay-seconds: 10
+  automation:
+    webhook:
+      default-timeout-ms: 5000
+      min-timeout-ms: 100
+      max-timeout-ms: 30000
+      max-response-body-length: 10000
 
 logging:
   pattern:

@@ -65,14 +65,14 @@ public class AutomationRuleEvaluationService {
 		}
 		
 		for (AutomationRule rule : rules) {
-			evaluateRule(tenantId, sourceEventId, message.eventType(), payload, rule);
+			evaluateRule(tenantId, sourceEventId, message, payload, rule);
 		}
 	}
 	
 	private void evaluateRule(
 			TenantId tenantId,
 			UUID sourceEventId,
-			String sourceEventType,
+			OutboxEventMessage message,
 			Map<String, Object> payload,
 			AutomationRule rule
 	) {
@@ -96,7 +96,7 @@ public class AutomationRuleEvaluationService {
 					tenantId,
 					rule.getId(),
 					sourceEventId,
-					sourceEventType
+					message.eventType()
 			);
 		} catch (DuplicateAutomationExecutionException exception) {
 			log.info(
@@ -121,6 +121,7 @@ public class AutomationRuleEvaluationService {
 					rule.getId(),
 					execution.getId(),
 					sourceEventId,
+					message,
 					rule.getActionJson()
 			);
 			

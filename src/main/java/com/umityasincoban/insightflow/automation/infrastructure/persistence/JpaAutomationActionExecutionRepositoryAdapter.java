@@ -50,6 +50,7 @@ public class JpaAutomationActionExecutionRepositoryAdapter implements Automation
 			AutomationExecutionId executionId,
 			String actionType,
 			Map<String, Object> requestPayload,
+			Map<String, Object> resultPayload,
 			String errorMessage
 	) {
 		AutomationActionExecutionEntity entity = AutomationActionExecutionEntity.failed(
@@ -57,6 +58,7 @@ public class JpaAutomationActionExecutionRepositoryAdapter implements Automation
 				executionId.value(),
 				actionType,
 				requestPayload,
+				resultPayload,
 				errorMessage
 		);
 		

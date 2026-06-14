@@ -94,6 +94,7 @@ public class AutomationActionExecutionEntity {
 			UUID executionId,
 			String actionType,
 			Map<String, Object> requestPayload,
+			Map<String, Object> resultPayload,
 			String errorMessage
 	) {
 		return new AutomationActionExecutionEntity(
@@ -102,7 +103,7 @@ public class AutomationActionExecutionEntity {
 				actionType,
 				AutomationExecutionStatus.FAILED,
 				requestPayload,
-				Map.of(),
+				resultPayload,
 				errorMessage
 		);
 	}

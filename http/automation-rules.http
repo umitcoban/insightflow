@@ -60,6 +60,41 @@ X-Correlation-Id: demo-create-automation-rule-ai-completed-001
   "priority": 100
 }
 
+### Create automation rule with WEBHOOK action
+POST {{baseUrl}}/api/v1/automation/rules
+Content-Type: application/json
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-create-automation-rule-webhook-001
+
+{
+  "name": "Send churn risk webhook",
+  "description": "Notifies an external system about churn risk feedback.",
+  "triggerEventType": "feedback.ai-analysis-completed",
+  "conditionJson": {
+    "sentiment": "NEGATIVE",
+    "riskLevel": "CHURN_RISK"
+  },
+  "actionJson": [
+    {
+      "type": "WEBHOOK",
+      "url": "https://example.com/webhooks/feedback",
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json",
+        "X-API-Key": "replace-me"
+      },
+      "body": {
+        "eventId": "{{event.eventId}}",
+        "feedbackId": "{{event.aggregateId}}",
+        "sentiment": "{{payload.sentiment}}",
+        "riskLevel": "{{payload.riskLevel}}"
+      },
+      "timeoutMs": 5000
+    }
+  ],
+  "priority": 100
+}
+
 ### Create automation rule with default priority
 POST {{baseUrl}}/api/v1/automation/rules
 Content-Type: application/json

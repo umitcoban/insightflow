@@ -668,7 +668,82 @@ Already implemented Java persistence classes:
 
 Current rule engine status:
 
-Persistence entities exist, but rule API and rule evaluation are not implemented yet.
+Automation Rule create/list/detail/update/activate/deactivate endpoints are implemented.
+Automation Rule evaluation/execution v1 is implemented.
+Execution and action execution history endpoints are implemented.
+Execution idempotency is enforced by a unique index on `(tenant_id, rule_id, source_event_id)`.
+Duplicate concurrent execution inserts are handled safely.
+
+Supported automation action types:
+
+```text
+LOG
+WEBHOOK
+```
+
+WEBHOOK action JSON:
+
+```json
+{
+  "type": "WEBHOOK",
+  "url": "https://example.com/webhooks/feedback",
+  "method": "POST",
+  "headers": {
+    "Content-Type": "application/json",
+    "X-API-Key": "replace-me"
+  },
+  "body": {
+    "eventId": "{{event.eventId}}",
+    "feedbackId": "{{event.aggregateId}}",
+    "sentiment": "{{payload.sentiment}}",
+    "riskLevel": "{{payload.riskLevel}}"
+  },
+  "timeoutMs": 5000
+}
+```
+
+WEBHOOK v1 behavior:
+
+* Supported methods: `GET`, `POST`, `PUT`, `PATCH`.
+* Method defaults to `POST`.
+* `GET` requests do not send a body.
+* Timeout defaults to 5000 ms and is clamped between 100 ms and 30000 ms.
+* Response bodies persisted in `automation_action_executions.result_payload` are bounded by `insightflow.automation.webhook.max-response-body-length` and marked with `responseBodyTruncated` when truncated.
+* Sensitive persisted request headers are masked as `***`: `Authorization`, `Proxy-Authorization`, `X-API-Key`, `Cookie`, `Set-Cookie`.
+* The actual outbound request still uses the configured header values.
+* 2xx responses mark the action `SUCCESS`; non-2xx responses, timeout, and network errors mark the action `FAILED`.
+* One failed action does not stop remaining actions; the parent automation execution is marked `FAILED` if any action fails.
+* Retry scheduling is not implemented yet.
+
+WEBHOOK template placeholders are supported in body values and header values:
+
+```text
+{{event.eventId}}
+{{event.tenantId}}
+{{event.aggregateType}}
+{{event.aggregateId}}
+{{event.eventType}}
+{{event.eventVersion}}
+{{event.createdAt}}
+{{payload.sentiment}}
+{{payload.riskLevel}}
+{{payload.priority}}
+{{payload.customerId}}
+{{payload.analysis.sentiment}}
+```
+
+Template resolution supports nested payload dot notation and recursively resolves maps/lists.
+If a JSON string value is exactly one placeholder, the resolved value type is preserved when possible.
+If a placeholder is embedded in a larger string, the value is converted to text.
+Missing whole-value placeholders resolve to `null`; missing embedded placeholders resolve to an empty string.
+
+WEBHOOK URL safety rules:
+
+* Only `http` and `https` schemes are allowed.
+* Malformed URLs are rejected.
+* Embedded URL credentials are rejected.
+* `localhost`, loopback, link-local, unspecified, and private IP targets are rejected.
+* Internal/private webhook targets are intentionally not supported in v1.
 
 Next likely task:
 

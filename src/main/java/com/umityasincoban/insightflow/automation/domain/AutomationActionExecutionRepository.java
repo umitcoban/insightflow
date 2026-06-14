@@ -20,6 +20,7 @@ public interface AutomationActionExecutionRepository {
 			AutomationExecutionId executionId,
 			String actionType,
 			Map<String, Object> requestPayload,
+			Map<String, Object> resultPayload,
 			String errorMessage
 	);
 	

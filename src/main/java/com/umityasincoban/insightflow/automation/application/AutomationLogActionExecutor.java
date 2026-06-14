@@ -1,6 +1,7 @@
 package com.umityasincoban.insightflow.automation.application;
 
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleId;
+import com.umityasincoban.insightflow.outbox.application.OutboxEventMessage;
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,21 +17,18 @@ public class AutomationLogActionExecutor implements AutomationActionExecutor {
 	private static final String LOG_ACTION_TYPE = "LOG";
 	
 	@Override
+	public boolean supports(String actionType) {
+		return LOG_ACTION_TYPE.equals(actionType);
+	}
+	
+	@Override
 	public AutomationActionExecutionResult execute(
 			TenantId tenantId,
 			AutomationRuleId ruleId,
 			UUID sourceEventId,
+			OutboxEventMessage eventMessage,
 			Map<String, Object> actionJson
 	) {
-		String actionType = resolveActionType(actionJson);
-		
-		if (!LOG_ACTION_TYPE.equals(actionType)) {
-			return AutomationActionExecutionResult.failed(
-					actionType,
-					"Unsupported automation action type: " + actionType
-			);
-		}
-		
 		String message = resolveMessage(actionJson);
 		
 		log.info(
