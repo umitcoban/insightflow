@@ -10,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,7 @@ public class JpaAutomationExecutionRepositoryAdapter implements AutomationExecut
 	}
 	
 	@Override
+	@Transactional
 	public AutomationExecution startExecution(
 			TenantId tenantId,
 			AutomationRuleId ruleId,
@@ -50,6 +52,7 @@ public class JpaAutomationExecutionRepositoryAdapter implements AutomationExecut
 	}
 	
 	@Override
+	@Transactional
 	public AutomationExecution markSkipped(TenantId tenantId, AutomationExecutionId executionId) {
 		AutomationExecutionEntity entity = getTenantScopedEntity(tenantId, executionId);
 		entity.markSkipped();
@@ -58,6 +61,7 @@ public class JpaAutomationExecutionRepositoryAdapter implements AutomationExecut
 	}
 	
 	@Override
+	@Transactional
 	public AutomationExecution markSuccess(TenantId tenantId, AutomationExecutionId executionId, boolean matched) {
 		AutomationExecutionEntity entity = getTenantScopedEntity(tenantId, executionId);
 		entity.markSuccess(matched);
@@ -66,6 +70,21 @@ public class JpaAutomationExecutionRepositoryAdapter implements AutomationExecut
 	}
 	
 	@Override
+	@Transactional
+	public AutomationExecution markRetryScheduled(
+			TenantId tenantId,
+			AutomationExecutionId executionId,
+			boolean matched,
+			String errorMessage
+	) {
+		AutomationExecutionEntity entity = getTenantScopedEntity(tenantId, executionId);
+		entity.markRetryScheduled(matched, errorMessage);
+		
+		return automationExecutionPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	@Transactional
 	public AutomationExecution markFailed(
 			TenantId tenantId,
 			AutomationExecutionId executionId,

@@ -5,7 +5,9 @@ import com.umityasincoban.insightflow.outbox.application.OutboxEventMessage;
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.junit.jupiter.api.Test;
 
+import java.net.InetAddress;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -19,7 +21,7 @@ class AutomationWebhookActionExecutorTest {
 	private final AutomationWebhookProperties properties = properties();
 	private final AutomationWebhookActionExecutor executor = new AutomationWebhookActionExecutor(
 			webhookClient,
-			new AutomationWebhookUrlValidator(),
+			new AutomationWebhookUrlValidator(host -> List.of(InetAddress.getByName("93.184.216.34"))),
 			new AutomationWebhookTemplateResolver(),
 			new AutomationWebhookPayloadSanitizer(),
 			properties

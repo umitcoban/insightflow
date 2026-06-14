@@ -35,6 +35,11 @@ public class AutomationWebhookPayloadSanitizer {
 			payload.put("body", body);
 		}
 		payload.put("timeoutMs", timeoutMs);
+		boolean retryEligible = !containsSensitiveHeader(headers);
+		payload.put("retryEligible", retryEligible);
+		if (!retryEligible) {
+			payload.put("retryIneligibleReason", "SENSITIVE_HEADERS_NOT_PERSISTED");
+		}
 		return payload;
 	}
 	
@@ -52,5 +57,9 @@ public class AutomationWebhookPayloadSanitizer {
 	
 	private static boolean isSensitive(String headerName) {
 		return headerName != null && SENSITIVE_HEADERS.contains(headerName.toLowerCase(Locale.ROOT));
+	}
+	
+	public boolean containsSensitiveHeader(Map<String, String> headers) {
+		return headers.keySet().stream().anyMatch(AutomationWebhookPayloadSanitizer::isSensitive);
 	}
 }

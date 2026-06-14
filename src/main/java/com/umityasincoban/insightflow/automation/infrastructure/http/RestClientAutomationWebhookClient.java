@@ -61,7 +61,8 @@ public class RestClientAutomationWebhookClient implements AutomationWebhookClien
 		return new AutomationWebhookResponse(
 				response.getStatusCode().value(),
 				body,
-				durationMs(startedAt)
+				durationMs(startedAt),
+				response.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)
 		);
 	}
 	

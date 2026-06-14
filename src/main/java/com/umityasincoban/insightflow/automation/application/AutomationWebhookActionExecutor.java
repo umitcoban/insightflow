@@ -51,29 +51,41 @@ public class AutomationWebhookActionExecutor implements AutomationActionExecutor
 			OutboxEventMessage eventMessage,
 			Map<String, Object> actionJson
 	) {
-		Map<String, Object> requestPayload = Map.of();
-		
 		try {
-			validateActionType(actionJson);
-			URI url = urlValidator.validate(stringValue(actionJson.get("url")));
-			String method = resolveMethod(actionJson.get("method"));
-			Map<String, String> headers = templateResolver.resolveHeaders(resolveHeaders(actionJson.get("headers")), eventMessage);
-			Object body = "GET".equals(method) ? null : templateResolver.resolve(actionJson.get("body"), eventMessage);
-			int timeoutMs = resolveTimeout(actionJson.get("timeoutMs"));
-			
-			requestPayload = payloadSanitizer.sanitizeRequestPayload(
-					url.toString(),
-					method,
-					headers,
-					body,
-					timeoutMs
+			AutomationWebhookExecutionPlan plan = prepare(actionJson, eventMessage);
+			return executePrepared(plan.request(), plan.requestPayload());
+		} catch (RuntimeException exception) {
+			return AutomationActionExecutionResult.failed(
+					WEBHOOK_ACTION_TYPE,
+					Map.of(),
+					failurePayload(exception),
+					exception.getMessage() == null ? "Webhook action failed" : exception.getMessage()
 			);
-			
-			AutomationWebhookResponse response = webhookClient.send(
-					new AutomationWebhookRequest(url, method, headers, body, timeoutMs)
-			);
-			
-			Map<String, Object> resultPayload = responsePayload(response.success(), response.httpStatus(), response.responseBody(), response.durationMs());
+		}
+	}
+	
+	public AutomationWebhookExecutionPlan prepare(Map<String, Object> actionJson, OutboxEventMessage eventMessage) {
+		validateActionType(actionJson);
+		URI url = urlValidator.validate(stringValue(actionJson.get("url")));
+		String method = resolveMethod(actionJson.get("method"));
+		Map<String, String> headers = templateResolver.resolveHeaders(resolveHeaders(actionJson.get("headers")), eventMessage);
+		Object body = "GET".equals(method) ? null : templateResolver.resolve(actionJson.get("body"), eventMessage);
+		int timeoutMs = resolveTimeout(actionJson.get("timeoutMs"));
+		
+		return new AutomationWebhookExecutionPlan(
+				new AutomationWebhookRequest(url, method, headers, body, timeoutMs),
+				payloadSanitizer.sanitizeRequestPayload(url.toString(), method, headers, body, timeoutMs)
+		);
+	}
+	
+	public AutomationActionExecutionResult executePrepared(
+			AutomationWebhookRequest request,
+			Map<String, Object> requestPayload
+	) {
+		try {
+			urlValidator.validateBeforeSend(request.url().toString());
+			AutomationWebhookResponse response = webhookClient.send(request);
+			Map<String, Object> resultPayload = responsePayload(response.success(), response.httpStatus(), response.responseBody(), response.durationMs(), response.retryAfter());
 			if (response.success()) {
 				return AutomationActionExecutionResult.success(WEBHOOK_ACTION_TYPE, requestPayload, resultPayload);
 			}
@@ -95,7 +107,7 @@ public class AutomationWebhookActionExecutor implements AutomationActionExecutor
 			return AutomationActionExecutionResult.failed(
 					WEBHOOK_ACTION_TYPE,
 					requestPayload,
-					Map.of("success", false, "errorType", "CONFIGURATION_ERROR"),
+					failurePayload(exception),
 					exception.getMessage() == null ? "Webhook action failed" : exception.getMessage()
 			);
 		}
@@ -153,13 +165,34 @@ public class AutomationWebhookActionExecutor implements AutomationActionExecutor
 		return headers;
 	}
 	
-	private Map<String, Object> responsePayload(boolean success, int httpStatus, String responseBody, long durationMs) {
+	private Map<String, Object> responsePayload(
+			boolean success,
+			int httpStatus,
+			String responseBody,
+			long durationMs,
+			String retryAfter
+	) {
 		Map<String, Object> payload = new LinkedHashMap<>();
 		payload.put("success", success);
 		payload.put("httpStatus", httpStatus);
 		putBoundedResponseBody(payload, responseBody);
 		payload.put("durationMs", durationMs);
+		if (retryAfter != null && !retryAfter.isBlank()) {
+			payload.put("retryAfter", retryAfter);
+		}
 		return payload;
+	}
+	
+	private static Map<String, Object> failurePayload(RuntimeException exception) {
+		String errorType = "CONFIGURATION_ERROR";
+		if (exception instanceof UnsafeAutomationWebhookUrlException) {
+			errorType = "UNSAFE_URL";
+		} else if (exception instanceof AutomationWebhookDnsResolutionException) {
+			errorType = "DNS_RESOLUTION_FAILED";
+		} else if (exception instanceof InvalidAutomationWebhookConfigurationException) {
+			errorType = "CONFIGURATION_ERROR";
+		}
+		return Map.of("success", false, "errorType", errorType);
 	}
 	
 	private void putBoundedResponseBody(Map<String, Object> payload, String responseBody) {

@@ -20,6 +20,13 @@ public interface AutomationExecutionRepository {
 	
 	AutomationExecution markSuccess(TenantId tenantId, AutomationExecutionId executionId, boolean matched);
 	
+	AutomationExecution markRetryScheduled(
+			TenantId tenantId,
+			AutomationExecutionId executionId,
+			boolean matched,
+			String errorMessage
+	);
+	
 	AutomationExecution markFailed(
 			TenantId tenantId,
 			AutomationExecutionId executionId,

@@ -16,6 +16,11 @@ public record AutomationActionExecutionResponse(
 		Map<String, Object> requestPayload,
 		Map<String, Object> resultPayload,
 		String errorMessage,
+		int attemptCount,
+		int maxAttempts,
+		OffsetDateTime nextRetryAt,
+		OffsetDateTime lastAttemptAt,
+		OffsetDateTime completedAt,
 		OffsetDateTime createdAt
 ) {
 	
@@ -29,6 +34,11 @@ public record AutomationActionExecutionResponse(
 				actionExecution.getRequestPayload(),
 				actionExecution.getResultPayload(),
 				actionExecution.getErrorMessage(),
+				actionExecution.getAttemptCount(),
+				actionExecution.getMaxAttempts(),
+				actionExecution.getNextRetryAt(),
+				actionExecution.getLastAttemptAt(),
+				actionExecution.getCompletedAt(),
 				actionExecution.getCreatedAt()
 		);
 	}

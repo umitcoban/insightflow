@@ -45,6 +45,21 @@ public class AutomationActionExecutionEntity {
 	@Column(name = "error_message", columnDefinition = "text")
 	private String errorMessage;
 	
+	@Column(name = "attempt_count", nullable = false)
+	private int attemptCount;
+	
+	@Column(name = "max_attempts", nullable = false)
+	private int maxAttempts;
+	
+	@Column(name = "next_retry_at")
+	private OffsetDateTime nextRetryAt;
+	
+	@Column(name = "last_attempt_at")
+	private OffsetDateTime lastAttemptAt;
+	
+	@Column(name = "completed_at")
+	private OffsetDateTime completedAt;
+	
 	@Column(name = "created_at", nullable = false)
 	private OffsetDateTime createdAt;
 	
@@ -58,7 +73,9 @@ public class AutomationActionExecutionEntity {
 			AutomationExecutionStatus status,
 			Map<String, Object> requestPayload,
 			Map<String, Object> resultPayload,
-			String errorMessage
+			String errorMessage,
+			int attemptCount,
+			int maxAttempts
 	) {
 		this.id = UUID.randomUUID();
 		this.tenantId = tenantId;
@@ -68,7 +85,32 @@ public class AutomationActionExecutionEntity {
 		this.requestPayload = requestPayload == null ? Map.of() : Map.copyOf(requestPayload);
 		this.resultPayload = resultPayload == null ? Map.of() : Map.copyOf(resultPayload);
 		this.errorMessage = errorMessage;
+		this.attemptCount = attemptCount;
+		this.maxAttempts = maxAttempts;
+		if (status == AutomationExecutionStatus.SUCCESS || status == AutomationExecutionStatus.FAILED) {
+			this.completedAt = OffsetDateTime.now();
+		}
 		this.createdAt = OffsetDateTime.now();
+	}
+	
+	public static AutomationActionExecutionEntity pending(
+			UUID tenantId,
+			UUID executionId,
+			String actionType,
+			Map<String, Object> requestPayload,
+			int maxAttempts
+	) {
+		return new AutomationActionExecutionEntity(
+				tenantId,
+				executionId,
+				actionType,
+				AutomationExecutionStatus.PENDING,
+				requestPayload,
+				Map.of(),
+				null,
+				0,
+				maxAttempts
+		);
 	}
 	
 	public static AutomationActionExecutionEntity success(
@@ -85,7 +127,9 @@ public class AutomationActionExecutionEntity {
 				AutomationExecutionStatus.SUCCESS,
 				requestPayload,
 				resultPayload,
-				null
+				null,
+				1,
+				1
 		);
 	}
 	
@@ -104,7 +148,9 @@ public class AutomationActionExecutionEntity {
 				AutomationExecutionStatus.FAILED,
 				requestPayload,
 				resultPayload,
-				errorMessage
+				errorMessage,
+				1,
+				1
 		);
 	}
 	
@@ -140,7 +186,60 @@ public class AutomationActionExecutionEntity {
 		return errorMessage;
 	}
 	
+	public int getAttemptCount() {
+		return attemptCount;
+	}
+	
+	public int getMaxAttempts() {
+		return maxAttempts;
+	}
+	
+	public OffsetDateTime getNextRetryAt() {
+		return nextRetryAt;
+	}
+	
+	public OffsetDateTime getLastAttemptAt() {
+		return lastAttemptAt;
+	}
+	
+	public OffsetDateTime getCompletedAt() {
+		return completedAt;
+	}
+	
 	public OffsetDateTime getCreatedAt() {
 		return createdAt;
+	}
+	
+	public void markInProgress(OffsetDateTime lastAttemptAt) {
+		boolean alreadyInProgress = this.status == AutomationExecutionStatus.IN_PROGRESS;
+		this.status = AutomationExecutionStatus.IN_PROGRESS;
+		if (!alreadyInProgress) {
+			this.attemptCount = this.attemptCount + 1;
+		}
+		this.lastAttemptAt = lastAttemptAt;
+		this.nextRetryAt = null;
+	}
+	
+	public void markSuccess(Map<String, Object> resultPayload, OffsetDateTime completedAt) {
+		this.status = AutomationExecutionStatus.SUCCESS;
+		this.resultPayload = resultPayload == null ? Map.of() : Map.copyOf(resultPayload);
+		this.errorMessage = null;
+		this.nextRetryAt = null;
+		this.completedAt = completedAt;
+	}
+	
+	public void markRetryScheduled(Map<String, Object> resultPayload, String errorMessage, OffsetDateTime nextRetryAt) {
+		this.status = AutomationExecutionStatus.RETRY_SCHEDULED;
+		this.resultPayload = resultPayload == null ? Map.of() : Map.copyOf(resultPayload);
+		this.errorMessage = errorMessage;
+		this.nextRetryAt = nextRetryAt;
+	}
+	
+	public void markFailed(Map<String, Object> resultPayload, String errorMessage, OffsetDateTime completedAt) {
+		this.status = AutomationExecutionStatus.FAILED;
+		this.resultPayload = resultPayload == null ? Map.of() : Map.copyOf(resultPayload);
+		this.errorMessage = errorMessage;
+		this.nextRetryAt = null;
+		this.completedAt = completedAt;
 	}
 }

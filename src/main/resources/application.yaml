@@ -54,6 +54,15 @@ insightflow:
       min-timeout-ms: 100
       max-timeout-ms: 30000
       max-response-body-length: 10000
+      retry:
+        enabled: true
+        max-attempts: 3
+        initial-delay-ms: 5000
+        multiplier: 2.0
+        max-delay-ms: 300000
+        scheduler-fixed-delay-ms: 2000
+        batch-size: 20
+        in-progress-timeout-ms: 60000
 
 logging:
   pattern:

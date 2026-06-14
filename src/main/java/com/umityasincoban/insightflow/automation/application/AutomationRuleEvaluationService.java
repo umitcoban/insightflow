@@ -10,7 +10,6 @@ import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ public class AutomationRuleEvaluationService {
 		this.automationActionExecutionService = automationActionExecutionService;
 	}
 	
-	@Transactional
 	public void evaluate(OutboxEventMessage message) {
 		if (!isValid(message)) {
 			log.debug("Skipping malformed automation event message={}", message);
@@ -127,11 +125,19 @@ public class AutomationRuleEvaluationService {
 			
 			List<String> actionErrors = actionResults.stream()
 					.filter(result -> !result.success())
+					.filter(result -> !Boolean.TRUE.equals(result.resultPayload().get("retryable")))
 					.map(AutomationActionExecutionResult::errorMessage)
 					.toList();
+			boolean retryScheduled = actionResults.stream()
+					.filter(result -> !result.success())
+					.anyMatch(result -> Boolean.TRUE.equals(result.resultPayload().get("retryable")));
 			
 			if (actionErrors.isEmpty()) {
-				automationExecutionRepository.markSuccess(tenantId, execution.getId(), true);
+				if (retryScheduled) {
+					automationExecutionRepository.markRetryScheduled(tenantId, execution.getId(), true, "Automation action retry scheduled");
+				} else {
+					automationExecutionRepository.markSuccess(tenantId, execution.getId(), true);
+				}
 			} else {
 				automationExecutionRepository.markFailed(tenantId, execution.getId(), true, String.join("; ", actionErrors));
 			}

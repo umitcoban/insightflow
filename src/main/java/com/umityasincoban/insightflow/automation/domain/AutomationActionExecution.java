@@ -16,6 +16,11 @@ public class AutomationActionExecution {
 	private final Map<String, Object> requestPayload;
 	private final Map<String, Object> resultPayload;
 	private final String errorMessage;
+	private final int attemptCount;
+	private final int maxAttempts;
+	private final OffsetDateTime nextRetryAt;
+	private final OffsetDateTime lastAttemptAt;
+	private final OffsetDateTime completedAt;
 	private final OffsetDateTime createdAt;
 	
 	public AutomationActionExecution(
@@ -27,6 +32,11 @@ public class AutomationActionExecution {
 			Map<String, Object> requestPayload,
 			Map<String, Object> resultPayload,
 			String errorMessage,
+			int attemptCount,
+			int maxAttempts,
+			OffsetDateTime nextRetryAt,
+			OffsetDateTime lastAttemptAt,
+			OffsetDateTime completedAt,
 			OffsetDateTime createdAt
 	) {
 		this.id = Objects.requireNonNull(id, "Automation action execution id cannot be null");
@@ -37,6 +47,11 @@ public class AutomationActionExecution {
 		this.requestPayload = Map.copyOf(Objects.requireNonNull(requestPayload, "Automation action request payload cannot be null"));
 		this.resultPayload = Map.copyOf(Objects.requireNonNull(resultPayload, "Automation action result payload cannot be null"));
 		this.errorMessage = errorMessage;
+		this.attemptCount = attemptCount;
+		this.maxAttempts = maxAttempts;
+		this.nextRetryAt = nextRetryAt;
+		this.lastAttemptAt = lastAttemptAt;
+		this.completedAt = completedAt;
 		this.createdAt = Objects.requireNonNull(createdAt, "Automation action execution createdAt cannot be null");
 	}
 	
@@ -70,6 +85,26 @@ public class AutomationActionExecution {
 	
 	public String getErrorMessage() {
 		return errorMessage;
+	}
+	
+	public int getAttemptCount() {
+		return attemptCount;
+	}
+	
+	public int getMaxAttempts() {
+		return maxAttempts;
+	}
+	
+	public OffsetDateTime getNextRetryAt() {
+		return nextRetryAt;
+	}
+	
+	public OffsetDateTime getLastAttemptAt() {
+		return lastAttemptAt;
+	}
+	
+	public OffsetDateTime getCompletedAt() {
+		return completedAt;
 	}
 	
 	public OffsetDateTime getCreatedAt() {

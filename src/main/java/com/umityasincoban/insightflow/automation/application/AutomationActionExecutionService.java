@@ -8,20 +8,34 @@ import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
 public class AutomationActionExecutionService {
 	
+	private static final Set<String> SENSITIVE_HEADERS = Set.of(
+			"authorization",
+			"proxy-authorization",
+			"x-api-key",
+			"cookie",
+			"set-cookie"
+	);
+	
 	private final List<AutomationActionExecutor> automationActionExecutors;
+	private final AutomationWebhookActionOrchestrator automationWebhookActionOrchestrator;
 	private final AutomationActionExecutionRepository automationActionExecutionRepository;
 	
 	public AutomationActionExecutionService(
 			List<AutomationActionExecutor> automationActionExecutors,
+			AutomationWebhookActionOrchestrator automationWebhookActionOrchestrator,
 			AutomationActionExecutionRepository automationActionExecutionRepository
 	) {
 		this.automationActionExecutors = List.copyOf(automationActionExecutors);
+		this.automationWebhookActionOrchestrator = automationWebhookActionOrchestrator;
 		this.automationActionExecutionRepository = automationActionExecutionRepository;
 	}
 	
@@ -50,6 +64,19 @@ public class AutomationActionExecutionService {
 		
 		try {
 			String actionType = resolveActionType(action);
+			if ("WEBHOOK".equals(actionType)) {
+				result = automationWebhookActionOrchestrator.executeInitial(
+						tenantId,
+						ruleId,
+						executionId,
+						sourceEventId,
+						eventMessage,
+						action
+				);
+				if (!result.requestPayload().isEmpty()) {
+					return result;
+				}
+			} else {
 			AutomationActionExecutor executor = automationActionExecutors.stream()
 					.filter(candidate -> candidate.supports(actionType))
 					.findFirst()
@@ -62,6 +89,7 @@ public class AutomationActionExecutionService {
 				);
 			} else {
 				result = executor.execute(tenantId, ruleId, sourceEventId, eventMessage, action);
+			}
 			}
 		} catch (RuntimeException exception) {
 			result = AutomationActionExecutionResult.failed(
@@ -97,10 +125,35 @@ public class AutomationActionExecutionService {
 			AutomationActionExecutionResult result
 	) {
 		if (result.requestPayload() == null || result.requestPayload().isEmpty()) {
-			return action == null ? Map.of() : action;
+			return action == null ? Map.of() : sanitizeFallbackAction(action);
 		}
 		
 		return result.requestPayload();
+	}
+	
+	@SuppressWarnings("unchecked")
+	private static Map<String, Object> sanitizeFallbackAction(Map<String, Object> action) {
+		if (!"WEBHOOK".equals(resolveActionType(action))) {
+			return action;
+		}
+		
+		Map<String, Object> sanitized = new LinkedHashMap<>(action);
+		Object headersValue = sanitized.get("headers");
+		if (headersValue instanceof Map<?, ?> headers) {
+			Map<String, Object> sanitizedHeaders = new LinkedHashMap<>();
+			for (Map.Entry<?, ?> entry : headers.entrySet()) {
+				String headerName = entry.getKey() == null ? "" : entry.getKey().toString();
+				if (SENSITIVE_HEADERS.contains(headerName.toLowerCase(Locale.ROOT))) {
+					sanitizedHeaders.put(headerName, "***");
+				} else {
+					sanitizedHeaders.put(headerName, entry.getValue());
+				}
+			}
+			sanitized.put("headers", sanitizedHeaders);
+			sanitized.put("retryEligible", false);
+			sanitized.put("retryIneligibleReason", "SENSITIVE_HEADERS_NOT_PERSISTED");
+		}
+		return sanitized;
 	}
 	
 	private static String resolveActionType(Map<String, Object> action) {

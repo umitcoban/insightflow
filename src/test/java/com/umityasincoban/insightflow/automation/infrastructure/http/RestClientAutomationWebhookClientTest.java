@@ -52,6 +52,29 @@ class RestClientAutomationWebhookClientTest {
 	}
 	
 	@Test
+	void returnsRetryableServiceUnavailableWithRetryAfter() throws IOException {
+		startServer(exchange -> {
+			exchange.getResponseHeaders().add("Retry-After", "10");
+			respond(exchange, 503, "try later");
+		});
+		
+		AutomationWebhookResponse response = client.send(request("/retry", 500));
+		
+		assertEquals(503, response.httpStatus());
+		assertEquals("10", response.retryAfter());
+	}
+	
+	@Test
+	void returnsNonRetryableBadRequestWithoutThrowing() throws IOException {
+		startServer(exchange -> respond(exchange, 400, "bad"));
+		
+		AutomationWebhookResponse response = client.send(request("/bad", 500));
+		
+		assertEquals(400, response.httpStatus());
+		assertEquals("bad", response.responseBody());
+	}
+	
+	@Test
 	void timeoutThrowsRequestExceptionWithTimeoutType() throws IOException {
 		startServer(exchange -> {
 			try {

@@ -60,7 +60,7 @@ public class AutomationExecutionEntity {
 		this.ruleId = ruleId;
 		this.sourceEventId = sourceEventId;
 		this.sourceEventType = sourceEventType;
-		this.status = AutomationExecutionStatus.SKIPPED;
+		this.status = AutomationExecutionStatus.IN_PROGRESS;
 		this.matched = false;
 		this.startedAt = OffsetDateTime.now();
 	}
@@ -114,7 +114,15 @@ public class AutomationExecutionEntity {
 	public void markSuccess(boolean matched) {
 		this.status = AutomationExecutionStatus.SUCCESS;
 		this.matched = matched;
+		this.errorMessage = null;
 		this.finishedAt = OffsetDateTime.now();
+	}
+	
+	public void markRetryScheduled(boolean matched, String errorMessage) {
+		this.status = AutomationExecutionStatus.RETRY_SCHEDULED;
+		this.matched = matched;
+		this.errorMessage = errorMessage;
+		this.finishedAt = null;
 	}
 	
 	public void markFailed(String errorMessage) {

@@ -711,9 +711,79 @@ WEBHOOK v1 behavior:
 * Response bodies persisted in `automation_action_executions.result_payload` are bounded by `insightflow.automation.webhook.max-response-body-length` and marked with `responseBodyTruncated` when truncated.
 * Sensitive persisted request headers are masked as `***`: `Authorization`, `Proxy-Authorization`, `X-API-Key`, `Cookie`, `Set-Cookie`.
 * The actual outbound request still uses the configured header values.
-* 2xx responses mark the action `SUCCESS`; non-2xx responses, timeout, and network errors mark the action `FAILED`.
-* One failed action does not stop remaining actions; the parent automation execution is marked `FAILED` if any action fails.
-* Retry scheduling is not implemented yet.
+* 2xx responses mark the action `SUCCESS`; permanent failures mark the action `FAILED`; transient failures can mark the action `RETRY_SCHEDULED`.
+* One failed action does not stop remaining actions.
+* Parent automation executions use `RETRY_SCHEDULED` while any action is pending, in progress, or waiting for retry; they become `SUCCESS` when all actions succeed and `FAILED` when any action permanently fails.
+* Webhook retry scheduling is implemented for transient failures.
+
+Automation action execution statuses:
+
+```text
+PENDING
+IN_PROGRESS
+RETRY_SCHEDULED
+SUCCESS
+FAILED
+SKIPPED
+```
+
+Webhook retry behavior:
+
+* Initial webhook actions create a `PENDING` action execution row in a short transaction before the HTTP request starts.
+* Attempts transition to `IN_PROGRESS`, increment `attempt_count`, and set `last_attempt_at`.
+* HTTP calls run outside the rule-evaluation transaction and outside row locks.
+* Successful attempts transition to `SUCCESS`, clear `next_retry_at`, and set `completed_at`.
+* Retryable failures transition to `RETRY_SCHEDULED` with `next_retry_at`.
+* Exhausted or permanent failures transition to `FAILED`, clear `next_retry_at`, and set `completed_at`.
+* `attempt_count` means attempts already started. With `max_attempts = 3`, at most three counted attempts are scheduled.
+* The retry scheduler claims due rows in bounded batches using PostgreSQL `FOR UPDATE SKIP LOCKED`, marks them `IN_PROGRESS`, commits, and then performs HTTP calls.
+* Stale `IN_PROGRESS` rows whose `last_attempt_at` is older than `in-progress-timeout-ms` are reclaimed by the scheduler.
+
+Retryable webhook failures:
+
+```text
+TIMEOUT
+NETWORK_ERROR
+DNS_RESOLUTION_FAILED
+HTTP 408, 425, 429, 500, 502, 503, 504
+```
+
+Non-retryable webhook failures:
+
+```text
+Unsafe URL / SSRF rejection
+Invalid or malformed URL
+Unsupported HTTP method
+Malformed action configuration
+Template/configuration errors
+Most other HTTP 4xx responses
+```
+
+Retry/backoff configuration:
+
+```yaml
+insightflow:
+  automation:
+    webhook:
+      retry:
+        enabled: true
+        max-attempts: 3
+        initial-delay-ms: 5000
+        multiplier: 2.0
+        max-delay-ms: 300000
+        scheduler-fixed-delay-ms: 2000
+        batch-size: 20
+        in-progress-timeout-ms: 60000
+```
+
+Backoff uses capped exponential delay and supports delta-seconds `Retry-After` for retryable responses such as `429` and `503`.
+
+Sensitive header retry limitation:
+
+* Sensitive outbound headers are never persisted in plaintext.
+* The first webhook attempt still uses the original configured sensitive values.
+* If sensitive headers are configured, the persisted request snapshot is marked `retryEligible: false` and retries are disabled with reason `SENSITIVE_HEADERS_NOT_PERSISTED`.
+* Future secret-reference support is needed before authenticated webhooks can be safely retried.
 
 WEBHOOK template placeholders are supported in body values and header values:
 
@@ -742,8 +812,10 @@ WEBHOOK URL safety rules:
 * Only `http` and `https` schemes are allowed.
 * Malformed URLs are rejected.
 * Embedded URL credentials are rejected.
-* `localhost`, loopback, link-local, unspecified, and private IP targets are rejected.
+* `localhost`, loopback, link-local, unspecified, multicast, private IP, carrier-grade NAT, documentation/benchmark, IPv6 unique-local, and IPv4-mapped private/loopback targets are rejected.
+* Hostnames are resolved immediately before sending through `AutomationDnsResolver`; every resolved address must be safe.
 * Internal/private webhook targets are intentionally not supported in v1.
+* DNS rebinding connection pinning is not implemented because the current `RestClient` stack still performs its own connect-time resolution. Validation is performed immediately before sending as a pragmatic v1 mitigation.
 
 Next likely task:
 
