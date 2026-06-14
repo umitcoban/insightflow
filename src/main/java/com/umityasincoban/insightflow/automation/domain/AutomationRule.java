@@ -16,7 +16,7 @@ public class AutomationRule {
 	private final String triggerEventType;
 	private final Map<String, Object> conditionJson;
 	private final List<Map<String, Object>> actionJson;
-	private final AutomationRuleStatus status;
+	private AutomationRuleStatus status;
 	private final int priority;
 	private final OffsetDateTime createdAt;
 	private final OffsetDateTime updatedAt;
@@ -93,6 +93,38 @@ public class AutomationRule {
 	
 	public boolean isActive() {
 		return AutomationRuleStatus.ACTIVE.equals(status);
+	}
+	
+	public AutomationRule updateDetails(
+			String name,
+			String description,
+			String triggerEventType,
+			Map<String, Object> conditionJson,
+			List<Map<String, Object>> actionJson,
+			Integer priority,
+			OffsetDateTime updatedAt
+	) {
+		return new AutomationRule(
+				id,
+				tenantId,
+				name == null ? this.name : name,
+				description == null ? this.description : description,
+				triggerEventType == null ? this.triggerEventType : triggerEventType,
+				conditionJson == null ? this.conditionJson : conditionJson,
+				actionJson == null ? this.actionJson : actionJson,
+				status,
+				priority == null ? this.priority : priority,
+				createdAt,
+				Objects.requireNonNull(updatedAt, "Automation rule updatedAt cannot be null")
+		);
+	}
+	
+	public void activate() {
+		this.status = AutomationRuleStatus.ACTIVE;
+	}
+	
+	public void deactivate() {
+		this.status = AutomationRuleStatus.INACTIVE;
 	}
 	
 	private static String validateName(String value) {

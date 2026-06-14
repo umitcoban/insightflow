@@ -6,11 +6,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AutomationRuleJpaRepository extends JpaRepository<AutomationRuleEntity, UUID> {
 	
 	Page<AutomationRuleEntity> findByTenantId(UUID tenantId, Pageable pageable);
+	
+	Optional<AutomationRuleEntity> findByTenantIdAndId(UUID tenantId, UUID id);
 	
 	List<AutomationRuleEntity> findByTenantIdAndTriggerEventTypeAndStatusOrderByPriorityDescCreatedAtDesc(
 			UUID tenantId,

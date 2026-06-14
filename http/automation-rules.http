@@ -1,5 +1,7 @@
 @baseUrl = http://localhost:8080
 @tenantSlug = acme
+@ruleId = replace-with-rule-id
+@executionId = replace-with-execution-id
 
 ### Create tenant if needed
 POST {{baseUrl}}/api/v1/tenants
@@ -83,10 +85,58 @@ GET {{baseUrl}}/api/v1/automation/rules?page=0&size=20
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-list-automation-rules-001
 
+### Get automation rule by id
+GET {{baseUrl}}/api/v1/automation/rules/{{ruleId}}
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-get-automation-rule-001
+
+### Update automation rule
+PATCH {{baseUrl}}/api/v1/automation/rules/{{ruleId}}
+Content-Type: application/json
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-update-automation-rule-001
+
+{
+  "name": "Updated churn risk rule",
+  "description": "Updated description",
+  "triggerEventType": "feedback.ai-analysis-completed",
+  "conditionJson": {
+    "sentiment": "NEGATIVE",
+    "riskLevel": "CHURN_RISK"
+  },
+  "actionJson": [
+    {
+      "type": "LOG",
+      "message": "Updated churn risk feedback message"
+    }
+  ],
+  "priority": 200
+}
+
+### Activate automation rule
+POST {{baseUrl}}/api/v1/automation/rules/{{ruleId}}/activate
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-activate-automation-rule-001
+
+### Deactivate automation rule
+POST {{baseUrl}}/api/v1/automation/rules/{{ruleId}}/deactivate
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-deactivate-automation-rule-001
+
 ### List automation executions
 GET {{baseUrl}}/api/v1/automation/executions?page=0&size=20
 X-Tenant-Slug: {{tenantSlug}}
 X-Correlation-Id: demo-list-automation-executions-001
+
+### Get automation execution by id
+GET {{baseUrl}}/api/v1/automation/executions/{{executionId}}
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-get-automation-execution-001
+
+### List automation action executions
+GET {{baseUrl}}/api/v1/automation/executions/{{executionId}}/actions
+X-Tenant-Slug: {{tenantSlug}}
+X-Correlation-Id: demo-list-automation-action-executions-001
 
 ### Missing tenant header
 GET {{baseUrl}}/api/v1/automation/rules?page=0&size=20

@@ -4,6 +4,7 @@ import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.Optional;
 import java.util.UUID;
 
 public interface AutomationExecutionRepository {
@@ -27,4 +28,12 @@ public interface AutomationExecutionRepository {
 	);
 	
 	Page<AutomationExecution> findByTenantId(TenantId tenantId, Pageable pageable);
+	
+	Optional<AutomationExecution> findByTenantIdAndId(TenantId tenantId, AutomationExecutionId executionId);
+	
+	boolean existsByTenantIdAndRuleIdAndSourceEventId(
+			TenantId tenantId,
+			AutomationRuleId ruleId,
+			UUID sourceEventId
+	);
 }

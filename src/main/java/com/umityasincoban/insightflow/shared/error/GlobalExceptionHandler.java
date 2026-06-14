@@ -1,5 +1,7 @@
 package com.umityasincoban.insightflow.shared.error;
 
+import com.umityasincoban.insightflow.automation.application.AutomationExecutionNotFoundException;
+import com.umityasincoban.insightflow.automation.application.AutomationRuleNotFoundException;
 import com.umityasincoban.insightflow.feedback.application.FeedbackNotFoundException;
 import com.umityasincoban.insightflow.shared.observability.CorrelationId;
 import com.umityasincoban.insightflow.shared.tenancy.TenantNotResolvedException;
@@ -111,6 +113,25 @@ public class GlobalExceptionHandler {
 		return problemDetail;
 	}
 	
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ProblemDetail handleIllegalArgument(
+			IllegalArgumentException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.BAD_REQUEST,
+				exception.getMessage()
+		);
+		
+		problemDetail.setTitle("Invalid request");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/invalid-request"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "INVALID_REQUEST");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
 	@ExceptionHandler(TenantNotResolvedException.class)
 	public ProblemDetail handleTenantNotResolved(
 			TenantNotResolvedException exception,
@@ -163,6 +184,44 @@ public class GlobalExceptionHandler {
 		problemDetail.setType(URI.create("https://insightflow.dev/problems/feedback-not-found"));
 		problemDetail.setInstance(URI.create(request.getRequestURI()));
 		problemDetail.setProperty("errorCode", "FEEDBACK_NOT_FOUND");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
+	@ExceptionHandler(AutomationRuleNotFoundException.class)
+	public ProblemDetail handleAutomationRuleNotFound(
+			AutomationRuleNotFoundException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.NOT_FOUND,
+				exception.getMessage()
+		);
+		
+		problemDetail.setTitle("Automation rule not found");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/automation-rule-not-found"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "AUTOMATION_RULE_NOT_FOUND");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
+	@ExceptionHandler(AutomationExecutionNotFoundException.class)
+	public ProblemDetail handleAutomationExecutionNotFound(
+			AutomationExecutionNotFoundException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.NOT_FOUND,
+				exception.getMessage()
+		);
+		
+		problemDetail.setTitle("Automation execution not found");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/automation-execution-not-found"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "AUTOMATION_EXECUTION_NOT_FOUND");
 		addCommonProperties(problemDetail);
 		
 		return problemDetail;

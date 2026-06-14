@@ -2,6 +2,7 @@ package com.umityasincoban.insightflow.automation.domain;
 
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 
+import java.util.List;
 import java.util.Map;
 
 public interface AutomationActionExecutionRepository {
@@ -20,5 +21,10 @@ public interface AutomationActionExecutionRepository {
 			String actionType,
 			Map<String, Object> requestPayload,
 			String errorMessage
+	);
+	
+	List<AutomationActionExecution> findByTenantIdAndExecutionIdOrderByCreatedAtAsc(
+			TenantId tenantId,
+			AutomationExecutionId executionId
 	);
 }

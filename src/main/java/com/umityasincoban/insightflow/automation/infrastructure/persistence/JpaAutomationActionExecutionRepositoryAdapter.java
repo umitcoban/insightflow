@@ -6,6 +6,7 @@ import com.umityasincoban.insightflow.automation.domain.AutomationExecutionId;
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Map;
 
 @Repository
@@ -62,5 +63,19 @@ public class JpaAutomationActionExecutionRepositoryAdapter implements Automation
 		return automationActionExecutionPersistenceMapper.toDomain(
 				automationActionExecutionJpaRepository.save(entity)
 		);
+	}
+	
+	@Override
+	public List<AutomationActionExecution> findByTenantIdAndExecutionIdOrderByCreatedAtAsc(
+			TenantId tenantId,
+			AutomationExecutionId executionId
+	) {
+		return automationActionExecutionJpaRepository.findByTenantIdAndExecutionIdOrderByCreatedAtAsc(
+						tenantId.value(),
+						executionId.value()
+				)
+				.stream()
+				.map(automationActionExecutionPersistenceMapper::toDomain)
+				.toList();
 	}
 }

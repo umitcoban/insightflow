@@ -1,6 +1,7 @@
 package com.umityasincoban.insightflow.automation.infrastructure.persistence;
 
 import com.umityasincoban.insightflow.automation.domain.AutomationRule;
+import com.umityasincoban.insightflow.automation.domain.AutomationRuleId;
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleRepository;
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleStatus;
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Repository
 public class JpaAutomationRuleRepositoryAdapter implements AutomationRuleRepository {
@@ -57,6 +59,12 @@ public class JpaAutomationRuleRepositoryAdapter implements AutomationRuleReposit
 	}
 	
 	@Override
+	public Optional<AutomationRule> findByTenantIdAndId(TenantId tenantId, AutomationRuleId ruleId) {
+		return automationRuleJpaRepository.findByTenantIdAndId(tenantId.value(), ruleId.value())
+				.map(automationRulePersistenceMapper::toDomain);
+	}
+	
+	@Override
 	public List<AutomationRule> findActiveByTenantIdAndTriggerEventType(
 			TenantId tenantId,
 			String triggerEventType
@@ -69,5 +77,31 @@ public class JpaAutomationRuleRepositoryAdapter implements AutomationRuleReposit
 				.stream()
 				.map(automationRulePersistenceMapper::toDomain)
 				.toList();
+	}
+	
+	@Override
+	public AutomationRule save(AutomationRule automationRule) {
+		AutomationRuleEntity entity = automationRuleJpaRepository.findByTenantIdAndId(
+						automationRule.getTenantId().value(),
+						automationRule.getId().value()
+				)
+				.orElseThrow(() -> new IllegalStateException("Automation rule not found: " + automationRule.getId().value()));
+		
+		entity.updateDetails(
+				automationRule.getName(),
+				automationRule.getDescription(),
+				automationRule.getTriggerEventType(),
+				automationRule.getConditionJson(),
+				automationRule.getActionJson(),
+				automationRule.getPriority()
+		);
+		
+		if (automationRule.isActive()) {
+			entity.activate();
+		} else {
+			entity.deactivate();
+		}
+		
+		return automationRulePersistenceMapper.toDomain(entity);
 	}
 }

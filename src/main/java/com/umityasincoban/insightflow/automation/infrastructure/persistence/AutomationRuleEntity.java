@@ -128,6 +128,23 @@ public class AutomationRuleEntity {
 		return AutomationRuleStatus.ACTIVE.equals(status);
 	}
 	
+	public void updateDetails(
+			String name,
+			String description,
+			String triggerEventType,
+			Map<String, Object> conditionJson,
+			List<Map<String, Object>> actionJson,
+			int priority
+	) {
+		this.name = name;
+		this.description = description;
+		this.triggerEventType = triggerEventType;
+		this.conditionJson = conditionJson == null ? Map.of() : Map.copyOf(conditionJson);
+		this.actionJson = actionJson == null ? List.of() : List.copyOf(actionJson);
+		this.priority = priority;
+		this.updatedAt = OffsetDateTime.now();
+	}
+	
 	public void deactivate() {
 		this.status = AutomationRuleStatus.INACTIVE;
 		this.updatedAt = OffsetDateTime.now();

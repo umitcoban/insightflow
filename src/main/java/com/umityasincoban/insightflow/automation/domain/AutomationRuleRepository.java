@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface AutomationRuleRepository {
 	
@@ -21,5 +22,9 @@ public interface AutomationRuleRepository {
 	
 	Page<AutomationRule> findByTenantId(TenantId tenantId, Pageable pageable);
 	
+	Optional<AutomationRule> findByTenantIdAndId(TenantId tenantId, AutomationRuleId ruleId);
+	
 	List<AutomationRule> findActiveByTenantIdAndTriggerEventType(TenantId tenantId, String triggerEventType);
+	
+	AutomationRule save(AutomationRule automationRule);
 }

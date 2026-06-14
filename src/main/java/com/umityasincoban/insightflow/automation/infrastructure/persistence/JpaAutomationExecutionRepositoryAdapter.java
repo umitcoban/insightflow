@@ -4,11 +4,14 @@ import com.umityasincoban.insightflow.automation.domain.AutomationExecution;
 import com.umityasincoban.insightflow.automation.domain.AutomationExecutionId;
 import com.umityasincoban.insightflow.automation.domain.AutomationExecutionRepository;
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleId;
+import com.umityasincoban.insightflow.automation.domain.DuplicateAutomationExecutionException;
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -39,7 +42,11 @@ public class JpaAutomationExecutionRepositoryAdapter implements AutomationExecut
 				sourceEventType
 		);
 		
-		return automationExecutionPersistenceMapper.toDomain(automationExecutionJpaRepository.save(entity));
+		try {
+			return automationExecutionPersistenceMapper.toDomain(automationExecutionJpaRepository.saveAndFlush(entity));
+		} catch (DataIntegrityViolationException exception) {
+			throw new DuplicateAutomationExecutionException(tenantId.value(), ruleId.value(), sourceEventId, exception);
+		}
 	}
 	
 	@Override
@@ -75,6 +82,25 @@ public class JpaAutomationExecutionRepositoryAdapter implements AutomationExecut
 	public Page<AutomationExecution> findByTenantId(TenantId tenantId, Pageable pageable) {
 		return automationExecutionJpaRepository.findByTenantId(tenantId.value(), pageable)
 				.map(automationExecutionPersistenceMapper::toDomain);
+	}
+	
+	@Override
+	public Optional<AutomationExecution> findByTenantIdAndId(TenantId tenantId, AutomationExecutionId executionId) {
+		return automationExecutionJpaRepository.findByTenantIdAndId(tenantId.value(), executionId.value())
+				.map(automationExecutionPersistenceMapper::toDomain);
+	}
+	
+	@Override
+	public boolean existsByTenantIdAndRuleIdAndSourceEventId(
+			TenantId tenantId,
+			AutomationRuleId ruleId,
+			UUID sourceEventId
+	) {
+		return automationExecutionJpaRepository.existsByTenantIdAndRuleIdAndSourceEventId(
+				tenantId.value(),
+				ruleId.value(),
+				sourceEventId
+		);
 	}
 	
 	private AutomationExecutionEntity getTenantScopedEntity(TenantId tenantId, AutomationExecutionId executionId) {

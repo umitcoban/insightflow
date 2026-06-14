@@ -12,4 +12,6 @@ public interface AutomationExecutionJpaRepository extends JpaRepository<Automati
 	Optional<AutomationExecutionEntity> findByTenantIdAndId(UUID tenantId, UUID id);
 	
 	Page<AutomationExecutionEntity> findByTenantId(UUID tenantId, Pageable pageable);
+	
+	boolean existsByTenantIdAndRuleIdAndSourceEventId(UUID tenantId, UUID ruleId, UUID sourceEventId);
 }
