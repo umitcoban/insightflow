@@ -3,6 +3,7 @@ package com.umityasincoban.insightflow.shared.error;
 import com.umityasincoban.insightflow.automation.application.AutomationExecutionNotFoundException;
 import com.umityasincoban.insightflow.automation.application.AutomationRuleNotFoundException;
 import com.umityasincoban.insightflow.feedback.application.FeedbackNotFoundException;
+import com.umityasincoban.insightflow.knowledge.application.KnowledgeAssistantUnavailableException;
 import com.umityasincoban.insightflow.shared.observability.CorrelationId;
 import com.umityasincoban.insightflow.shared.tenancy.TenantAccessDeniedException;
 import com.umityasincoban.insightflow.shared.tenancy.TenantNotResolvedException;
@@ -323,6 +324,25 @@ public class GlobalExceptionHandler {
 		problemDetail.setType(URI.create("https://insightflow.dev/problems/customer-not-found"));
 		problemDetail.setInstance(URI.create(request.getRequestURI()));
 		problemDetail.setProperty("errorCode", "CUSTOMER_NOT_FOUND");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
+	@ExceptionHandler(KnowledgeAssistantUnavailableException.class)
+	public ProblemDetail handleKnowledgeAssistantUnavailable(
+			KnowledgeAssistantUnavailableException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.SERVICE_UNAVAILABLE,
+				exception.getMessage()
+		);
+		
+		problemDetail.setTitle("Knowledge assistant unavailable");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/knowledge-assistant-unavailable"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "KNOWLEDGE_ASSISTANT_UNAVAILABLE");
 		addCommonProperties(problemDetail);
 		
 		return problemDetail;

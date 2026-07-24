@@ -51,7 +51,7 @@ public class SecurityConfig {
 				)
 				.addFilterAfter(tenantContextFilter, BearerTokenAuthenticationFilter.class)
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers("/actuator/health").permitAll()
+						.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/tenants").hasRole(SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/tenants/**").hasRole(SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/tenants/*/suspend").hasRole(SecurityRoles.PLATFORM_ADMIN)

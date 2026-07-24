@@ -44,6 +44,8 @@ The main goals are:
 
 See `docs/finalization-roadmap.md` for the full finalization checklist, `docs/api-reference.md` for the current API surface, and `docs/demo-runbook.md` for an end-to-end local demo flow.
 
+The first frontend console lives in `frontend/`. See `frontend/README.md` for local run instructions.
+
 ## Local Security
 
 Local infrastructure runs through Docker Compose:

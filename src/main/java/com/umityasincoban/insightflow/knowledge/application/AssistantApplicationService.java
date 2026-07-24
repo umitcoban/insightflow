@@ -26,12 +26,19 @@ public class AssistantApplicationService {
 	}
 	
 	public AssistantAnswer answer(String question) {
-		List<RetrievedKnowledgeChunk> chunks = vectorStore.search(
-				currentTenantProvider.getCurrentTenantId(),
-				embeddingClient.embed(question),
-				5
-		);
-		return new AssistantAnswer(answerGenerator.answer(question, chunks), chunks);
+		var tenantId = currentTenantProvider.getCurrentTenantId();
+		try {
+			List<RetrievedKnowledgeChunk> chunks = vectorStore.search(
+					tenantId,
+					embeddingClient.embed(question),
+					5
+			);
+			if (chunks.isEmpty()) {
+				return new AssistantAnswer("Knowledge base does not contain enough information to answer this question.", chunks);
+			}
+			return new AssistantAnswer(answerGenerator.answer(question, chunks), chunks);
+		} catch (RuntimeException exception) {
+			throw new KnowledgeAssistantUnavailableException("Knowledge assistant is unavailable. Verify Ollama models and Elasticsearch vector index configuration.", exception);
+		}
 	}
 }
-

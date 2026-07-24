@@ -28,6 +28,7 @@ public class CurrentTenantProvider {
 		
 		if (user.tenantUser()) {
 			Tenant tenant = tenantRepository.findById(user.tenantId())
+					.or(() -> tenantRepository.findBySlug(user.tenantSlug()))
 					.orElseThrow(() -> new TenantNotFoundException(user.tenantSlug()));
 			
 			if (!tenant.getSlug().equals(tenantSlug) || !tenant.getSlug().equals(user.tenantSlug())) {
