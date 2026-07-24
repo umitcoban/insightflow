@@ -99,7 +99,9 @@ public class TenantContextFilter extends OncePerRequestFilter {
 		return path.startsWith("/api/v1/customers")
 				|| path.startsWith("/api/v1/feedbacks")
 				|| path.startsWith("/api/v1/automation/rules")
-				|| path.startsWith("/api/v1/automation/executions");
+				|| path.startsWith("/api/v1/automation/executions")
+				|| path.startsWith("/api/v1/knowledge")
+				|| path.startsWith("/api/v1/assistant");
 	}
 	
 	private static String normalizedHeaderTenantSlug(HttpServletRequest request) {

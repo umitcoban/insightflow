@@ -25,7 +25,10 @@ class AutomationRuleApplicationServiceTest {
 	private final CurrentTenantProvider currentTenantProvider = mock(CurrentTenantProvider.class);
 	private final AutomationRuleApplicationService service = new AutomationRuleApplicationService(
 			automationRuleRepository,
-			currentTenantProvider
+			currentTenantProvider,
+			new AutomationRulePayloadValidator(),
+			new AutomationConditionEvaluator(),
+			mock(AutomationRuleEvaluationService.class)
 	);
 	
 	@Test

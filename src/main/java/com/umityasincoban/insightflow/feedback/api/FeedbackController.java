@@ -37,6 +37,42 @@ public class FeedbackController {
 		);
 	}
 	
+	@PatchMapping("/{id}/status")
+	public FeedbackResponse updateStatus(@PathVariable UUID id, @Valid @RequestBody UpdateFeedbackStatusRequest request) {
+		return FeedbackResponse.from(feedbackApplicationService.updateStatus(id, request.status()));
+	}
+	
+	@PatchMapping("/{id}/priority")
+	public FeedbackResponse updatePriority(@PathVariable UUID id, @Valid @RequestBody UpdateFeedbackPriorityRequest request) {
+		return FeedbackResponse.from(feedbackApplicationService.updatePriority(id, request.priority()));
+	}
+	
+	@PatchMapping("/{id}/assignment")
+	public FeedbackResponse assign(@PathVariable UUID id, @Valid @RequestBody AssignFeedbackRequest request) {
+		return FeedbackResponse.from(feedbackApplicationService.assign(id, request.assignedTo()));
+	}
+	
+	@PostMapping("/{id}/archive")
+	public FeedbackResponse archive(@PathVariable UUID id) {
+		return FeedbackResponse.from(feedbackApplicationService.archive(id));
+	}
+	
+	@PostMapping("/{id}/restore")
+	public FeedbackResponse restore(@PathVariable UUID id) {
+		return FeedbackResponse.from(feedbackApplicationService.restore(id));
+	}
+	
+	@PostMapping("/{id}/notes")
+	@ResponseStatus(HttpStatus.CREATED)
+	public FeedbackNoteResponse addNote(@PathVariable UUID id, @Valid @RequestBody CreateFeedbackNoteRequest request) {
+		return FeedbackNoteResponse.from(feedbackApplicationService.addNote(id, request.content()));
+	}
+	
+	@GetMapping("/{id}/notes")
+	public List<FeedbackNoteResponse> listNotes(@PathVariable UUID id) {
+		return feedbackApplicationService.listNotes(id).stream().map(FeedbackNoteResponse::from).toList();
+	}
+	
 	@GetMapping
 	public PageResponse<FeedbackResponse> listFeedbacks(
 			@RequestParam(required = false) FeedbackStatus status,

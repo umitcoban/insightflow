@@ -38,4 +38,27 @@ public class TenantController {
 				tenantApplicationService.getTenantBySlug(slug)
 		);
 	}
+	
+	@PostMapping("/{slug}/suspend")
+	public TenantResponse suspendTenant(@PathVariable String slug) {
+		return TenantResponse.from(tenantApplicationService.suspendTenant(slug));
+	}
+	
+	@PostMapping("/{slug}/reactivate")
+	public TenantResponse reactivateTenant(@PathVariable String slug) {
+		return TenantResponse.from(tenantApplicationService.reactivateTenant(slug));
+	}
+	
+	@GetMapping("/{slug}/settings")
+	public TenantSettingsResponse getTenantSettings(@PathVariable String slug) {
+		return TenantSettingsResponse.from(tenantApplicationService.getTenantSettings(slug));
+	}
+	
+	@PutMapping("/{slug}/settings")
+	public TenantSettingsResponse updateTenantSettings(
+			@PathVariable String slug,
+			@Valid @RequestBody TenantSettingsRequest request
+	) {
+		return TenantSettingsResponse.from(tenantApplicationService.updateTenantSettings(slug, request.settings()));
+	}
 }

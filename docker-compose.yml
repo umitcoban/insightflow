@@ -65,6 +65,38 @@ services:
       timeout: 5s
       retries: 20
 
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.5
+    container_name: insightflow-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - insightflow-elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null" ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: insightflow-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - insightflow-ollama-data:/root/.ollama
+    healthcheck:
+      test: [ "CMD-SHELL", "ollama list >/dev/null 2>&1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
 volumes:
   insightflow-postgres-data:
   insightflow-kafka-data:
+  insightflow-elasticsearch-data:
+  insightflow-ollama-data:

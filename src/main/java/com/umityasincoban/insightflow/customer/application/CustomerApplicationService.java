@@ -67,10 +67,47 @@ public class CustomerApplicationService {
 	}
 	
 	@Transactional(readOnly = true)
+	public Page<Customer> searchCustomers(String q, CustomerQuery query) {
+		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		PageRequest pageRequest = PageRequest.of(query.page(), query.size(), Sort.by(Sort.Direction.DESC, "createdAt"));
+		return customerRepository.searchByTenantId(tenantId, q, pageRequest);
+	}
+	
+	@Transactional(readOnly = true)
 	public Customer getCustomerById(UUID customerId) {
 		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
 		
 		return customerRepository.findByTenantIdAndId(tenantId, CustomerId.of(customerId))
 				.orElseThrow(() -> new CustomerNotFoundException(customerId));
+	}
+	
+	@Transactional
+	public Customer updateCustomer(UUID customerId, String externalId, String email, String fullName, String plan) {
+		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		CustomerId resolvedCustomerId = CustomerId.of(customerId);
+		if (customerRepository.findByTenantIdAndId(tenantId, resolvedCustomerId).isEmpty()) {
+			throw new CustomerNotFoundException(customerId);
+		}
+		return customerRepository.update(tenantId, resolvedCustomerId, externalId, email, fullName, plan);
+	}
+	
+	@Transactional
+	public Customer deactivateCustomer(UUID customerId) {
+		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		CustomerId resolvedCustomerId = CustomerId.of(customerId);
+		if (customerRepository.findByTenantIdAndId(tenantId, resolvedCustomerId).isEmpty()) {
+			throw new CustomerNotFoundException(customerId);
+		}
+		return customerRepository.deactivate(tenantId, resolvedCustomerId);
+	}
+	
+	@Transactional
+	public Customer activateCustomer(UUID customerId) {
+		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		CustomerId resolvedCustomerId = CustomerId.of(customerId);
+		if (customerRepository.findByTenantIdAndId(tenantId, resolvedCustomerId).isEmpty()) {
+			throw new CustomerNotFoundException(customerId);
+		}
+		return customerRepository.activate(tenantId, resolvedCustomerId);
 	}
 }

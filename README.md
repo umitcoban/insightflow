@@ -34,11 +34,13 @@ The main goals are:
 | Transactional outbox | Implemented |
 | Kafka event publishing/consuming | Implemented |
 | Mock AI enrichment | Implemented |
+| Spring AI adapter with Ollama default and optional OpenAI | Implemented |
 | Automation Rule Engine v1 | Implemented |
-| Elasticsearch feedback search | Planned |
-| Real AI provider adapter | Planned |
-| Tenant-specific RAG assistant | Planned |
-| Production deployment hardening | Planned |
+| Automation Rule Engine v2 DSL | Implemented |
+| Elasticsearch feedback search | Implemented |
+| Tenant-specific RAG assistant | Implemented |
+| Feedback/customer lifecycle APIs | Implemented |
+| Production deployment hardening | Implemented |
 
 See `docs/finalization-roadmap.md` for the full finalization checklist, `docs/api-reference.md` for the current API surface, and `docs/demo-runbook.md` for an end-to-end local demo flow.
 
@@ -50,7 +52,14 @@ Local infrastructure runs through Docker Compose:
 docker compose up -d
 ```
 
-Compose starts PostgreSQL, Kafka, and Keycloak. Keycloak is exposed on `http://localhost:8081`, runs in development mode, and imports `docker/keycloak/insightflow-realm.json`.
+Compose starts PostgreSQL, Kafka, Keycloak, Elasticsearch, and Ollama. Keycloak is exposed on `http://localhost:8081`, runs in development mode, and imports `docker/keycloak/insightflow-realm.json`.
+
+The default AI backend is Spring AI over Ollama. Pull local models before using AI-backed endpoints:
+
+```bash
+docker compose exec ollama ollama pull llama3.1
+docker compose exec ollama ollama pull mxbai-embed-large
+```
 
 Development-only Keycloak admin credentials:
 

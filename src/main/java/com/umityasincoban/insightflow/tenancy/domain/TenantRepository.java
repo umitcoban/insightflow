@@ -3,6 +3,7 @@ package com.umityasincoban.insightflow.tenancy.domain;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
 
 public interface TenantRepository {
 	
@@ -15,5 +16,11 @@ public interface TenantRepository {
 	boolean existsBySlug(String slug);
 	
 	List<Tenant> findAll();
+	
+	Tenant updateStatus(String slug, TenantStatus status);
+	
+	TenantSettings getSettings(TenantId tenantId);
+	
+	TenantSettings saveSettings(TenantId tenantId, Map<String, Object> settings);
 	
 }

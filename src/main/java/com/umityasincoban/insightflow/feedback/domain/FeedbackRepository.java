@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 
 public interface FeedbackRepository {
@@ -37,5 +38,19 @@ public interface FeedbackRepository {
 			String aiSummary,
 			String suggestedAction
 	);
+	
+	Feedback updateStatus(TenantId tenantId, FeedbackId feedbackId, FeedbackStatus status);
+	
+	Feedback updatePriority(TenantId tenantId, FeedbackId feedbackId, FeedbackPriority priority);
+	
+	Feedback assignTo(TenantId tenantId, FeedbackId feedbackId, String assignedTo);
+	
+	Feedback archive(TenantId tenantId, FeedbackId feedbackId);
+	
+	Feedback restore(TenantId tenantId, FeedbackId feedbackId);
+	
+	FeedbackNote addNote(TenantId tenantId, FeedbackId feedbackId, String author, String content);
+	
+	List<FeedbackNote> listNotes(TenantId tenantId, FeedbackId feedbackId);
 	
 }

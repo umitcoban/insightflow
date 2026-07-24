@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Test
+        run: ./gradlew clean test --no-daemon
+      - name: Build image
+        run: docker build -t insightflow-api:ci .
+      - name: Compose config validation
+        run: docker compose --env-file .env.example -f docker-compose.prod.yml config

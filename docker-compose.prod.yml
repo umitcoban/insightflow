@@ -1,0 +1,110 @@
+services:
+  insightflow-api:
+    build:
+      context: .
+    image: insightflow-api:prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    ports:
+      - "${INSIGHTFLOW_API_PORT:-8080}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      INSIGHTFLOW_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      INSIGHTFLOW_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      INSIGHTFLOW_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      INSIGHTFLOW_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      INSIGHTFLOW_SECURITY_JWT_ISSUER_URI: ${INSIGHTFLOW_SECURITY_JWT_ISSUER_URI}
+      INSIGHTFLOW_SECURITY_JWT_JWK_SET_URI: ${INSIGHTFLOW_SECURITY_JWT_JWK_SET_URI:-}
+      INSIGHTFLOW_SECURITY_JWT_AUDIENCE: ${INSIGHTFLOW_SECURITY_JWT_AUDIENCE}
+      INSIGHTFLOW_ELASTICSEARCH_URL: http://elasticsearch:9200
+      INSIGHTFLOW_AI_PROVIDER: ${INSIGHTFLOW_AI_PROVIDER:-spring-ai}
+      SPRING_AI_MODEL_CHAT: ${SPRING_AI_MODEL_CHAT:-ollama}
+      SPRING_AI_MODEL_EMBEDDING: ${SPRING_AI_MODEL_EMBEDDING:-ollama}
+      SPRING_AI_OLLAMA_BASE_URL: ${SPRING_AI_OLLAMA_BASE_URL:-http://ollama:11434}
+      SPRING_AI_OLLAMA_CHAT_MODEL: ${SPRING_AI_OLLAMA_CHAT_MODEL:-llama3.1}
+      SPRING_AI_OLLAMA_EMBEDDING_MODEL: ${SPRING_AI_OLLAMA_EMBEDDING_MODEL:-mxbai-embed-large}
+      INSIGHTFLOW_RAG_EMBEDDINGS_PROVIDER: ${INSIGHTFLOW_RAG_EMBEDDINGS_PROVIDER:-spring-ai}
+      INSIGHTFLOW_RAG_EMBEDDINGS_MODEL: ${INSIGHTFLOW_RAG_EMBEDDINGS_MODEL:-mxbai-embed-large}
+      INSIGHTFLOW_RAG_EMBEDDINGS_DIMENSIONS: ${INSIGHTFLOW_RAG_EMBEDDINGS_DIMENSIONS:-1024}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SPRING_AI_OPENAI_CHAT_MODEL: ${SPRING_AI_OPENAI_CHAT_MODEL:-gpt-5.6-terra}
+      SPRING_AI_OPENAI_EMBEDDING_MODEL: ${SPRING_AI_OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health/readiness | grep -q UP" ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+
+  postgres:
+    image: postgres:18.0-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - insightflow-prod-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: apache/kafka:4.1.1
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://kafka:29092,CONTROLLER://kafka:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - insightflow-prod-kafka-data:/tmp/kraft-combined-logs
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:29092 --list >/dev/null 2>&1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.5
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    volumes:
+      - insightflow-prod-elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null" ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - insightflow-prod-ollama-data:/root/.ollama
+    healthcheck:
+      test: [ "CMD-SHELL", "ollama list >/dev/null 2>&1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+volumes:
+  insightflow-prod-postgres-data:
+  insightflow-prod-kafka-data:
+  insightflow-prod-elasticsearch-data:
+  insightflow-prod-ollama-data:

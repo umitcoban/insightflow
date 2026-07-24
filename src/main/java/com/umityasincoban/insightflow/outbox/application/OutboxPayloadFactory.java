@@ -32,6 +32,24 @@ public final class OutboxPayloadFactory {
 		return Map.copyOf(payload);
 	}
 	
+	public static Map<String, Object> feedbackUpdatedPayload(Feedback feedback) {
+		Map<String, Object> payload = new LinkedHashMap<>(feedbackCreatedPayload(feedback));
+		payload.put("updatedAt", feedback.getUpdatedAt().toString());
+		if (feedback.getSentiment() != null) {
+			payload.put("sentiment", feedback.getSentiment().name());
+		}
+		if (feedback.getRiskLevel() != null) {
+			payload.put("riskLevel", feedback.getRiskLevel().name());
+		}
+		if (feedback.getCategory() != null) {
+			payload.put("category", feedback.getCategory());
+		}
+		if (feedback.getAssignedTo() != null) {
+			payload.put("assignedTo", feedback.getAssignedTo());
+		}
+		return Map.copyOf(payload);
+	}
+	
 	public static Map<String, Object> feedbackAiAnalysisCompletedPayload(
 			TenantId tenantId,
 			FeedbackId feedbackId,

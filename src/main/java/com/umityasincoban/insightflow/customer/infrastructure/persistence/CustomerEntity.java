@@ -2,10 +2,13 @@ package com.umityasincoban.insightflow.customer.infrastructure.persistence;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import com.umityasincoban.insightflow.customer.domain.CustomerStatus;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -33,6 +36,13 @@ public class CustomerEntity {
 	@Column(name = "plan", length = 60)
 	private String plan;
 	
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status", nullable = false, length = 40)
+	private CustomerStatus status;
+	
+	@Column(name = "deactivated_at")
+	private OffsetDateTime deactivatedAt;
+	
 	@Column(name = "created_at", nullable = false)
 	private OffsetDateTime createdAt;
 	
@@ -54,6 +64,7 @@ public class CustomerEntity {
 		this.email = email;
 		this.fullName = fullName;
 		this.plan = plan;
+		this.status = CustomerStatus.ACTIVE;
 		this.createdAt = OffsetDateTime.now();
 		this.updatedAt = OffsetDateTime.now();
 	}
@@ -82,11 +93,39 @@ public class CustomerEntity {
 		return plan;
 	}
 	
+	public CustomerStatus getStatus() {
+		return status;
+	}
+	
+	public OffsetDateTime getDeactivatedAt() {
+		return deactivatedAt;
+	}
+	
 	public OffsetDateTime getCreatedAt() {
 		return createdAt;
 	}
 	
 	public OffsetDateTime getUpdatedAt() {
 		return updatedAt;
+	}
+	
+	public void updateDetails(String externalId, String email, String fullName, String plan) {
+		this.externalId = externalId;
+		this.email = email;
+		this.fullName = fullName;
+		this.plan = plan;
+		this.updatedAt = OffsetDateTime.now();
+	}
+	
+	public void deactivate() {
+		this.status = CustomerStatus.INACTIVE;
+		this.deactivatedAt = OffsetDateTime.now();
+		this.updatedAt = OffsetDateTime.now();
+	}
+	
+	public void activate() {
+		this.status = CustomerStatus.ACTIVE;
+		this.deactivatedAt = null;
+		this.updatedAt = OffsetDateTime.now();
 	}
 }

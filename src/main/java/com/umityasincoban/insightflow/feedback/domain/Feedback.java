@@ -21,6 +21,8 @@ public class Feedback {
 	private final FeedbackRiskLevel riskLevel;
 	private final String aiSummary;
 	private final String suggestedAction;
+	private final String assignedTo;
+	private final OffsetDateTime archivedAt;
 	private final OffsetDateTime createdAt;
 	private final OffsetDateTime updatedAt;
 	
@@ -38,6 +40,8 @@ public class Feedback {
 			FeedbackRiskLevel riskLevel,
 			String aiSummary,
 			String suggestedAction,
+			String assignedTo,
+			OffsetDateTime archivedAt,
 			OffsetDateTime createdAt,
 			OffsetDateTime updatedAt
 	) {
@@ -54,6 +58,8 @@ public class Feedback {
 		this.riskLevel = riskLevel;
 		this.aiSummary = aiSummary;
 		this.suggestedAction = suggestedAction;
+		this.assignedTo = assignedTo;
+		this.archivedAt = archivedAt;
 		this.createdAt = Objects.requireNonNull(createdAt, "Feedback createdAt cannot be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "Feedback updatedAt cannot be null");
 	}
@@ -108,6 +114,14 @@ public class Feedback {
 	
 	public String getSuggestedAction() {
 		return suggestedAction;
+	}
+	
+	public String getAssignedTo() {
+		return assignedTo;
+	}
+	
+	public OffsetDateTime getArchivedAt() {
+		return archivedAt;
 	}
 	
 	public OffsetDateTime getCreatedAt() {

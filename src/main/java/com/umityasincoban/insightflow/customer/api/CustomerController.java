@@ -32,6 +32,27 @@ public class CustomerController {
 		);
 	}
 	
+	@PatchMapping("/{id}")
+	public CustomerResponse updateCustomer(@PathVariable UUID id, @Valid @RequestBody UpdateCustomerRequest request) {
+		return CustomerResponse.from(customerApplicationService.updateCustomer(
+				id,
+				request.externalId(),
+				request.email(),
+				request.fullName(),
+				request.plan()
+		));
+	}
+	
+	@PostMapping("/{id}/deactivate")
+	public CustomerResponse deactivateCustomer(@PathVariable UUID id) {
+		return CustomerResponse.from(customerApplicationService.deactivateCustomer(id));
+	}
+	
+	@PostMapping("/{id}/activate")
+	public CustomerResponse activateCustomer(@PathVariable UUID id) {
+		return CustomerResponse.from(customerApplicationService.activateCustomer(id));
+	}
+	
 	@GetMapping
 	public PageResponse<CustomerResponse> listCustomers(
 			@RequestParam(required = false) Integer page,
@@ -50,5 +71,14 @@ public class CustomerController {
 		return CustomerResponse.from(
 				customerApplicationService.getCustomerById(id)
 		);
+	}
+	
+	@GetMapping("/search")
+	public PageResponse<CustomerResponse> searchCustomers(
+			@RequestParam String q,
+			@RequestParam(required = false) Integer page,
+			@RequestParam(required = false) Integer size
+	) {
+		return PageResponse.from(customerApplicationService.searchCustomers(q, CustomerQuery.of(page, size)), CustomerResponse::from);
 	}
 }

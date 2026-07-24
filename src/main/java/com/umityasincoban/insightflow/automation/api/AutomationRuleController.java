@@ -85,4 +85,21 @@ public class AutomationRuleController {
 	public AutomationRuleResponse deactivateRule(@PathVariable UUID ruleId) {
 		return AutomationRuleResponse.from(automationRuleApplicationService.deactivateRule(ruleId));
 	}
+	
+	@PostMapping("/{ruleId}/dry-run")
+	public AutomationDryRunResponse dryRun(
+			@PathVariable UUID ruleId,
+			@RequestBody AutomationDryRunRequest request
+	) {
+		return new AutomationDryRunResponse(automationRuleApplicationService.dryRun(ruleId, request.payload()));
+	}
+	
+	@PostMapping("/{ruleId}/replay")
+	public ResponseEntity<Void> replay(
+			@PathVariable UUID ruleId,
+			@RequestBody AutomationReplayRequest request
+	) {
+		automationRuleApplicationService.replay(ruleId, request.sourceEventId(), request.payload());
+		return ResponseEntity.accepted().build();
+	}
 }

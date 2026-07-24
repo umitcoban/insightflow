@@ -3,6 +3,7 @@ package com.umityasincoban.insightflow.customer.infrastructure.persistence;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,4 +22,16 @@ public interface CustomerJpaRepository extends JpaRepository<CustomerEntity, UUI
 	boolean existsByTenantIdAndEmail(UUID tenantId, String email);
 	
 	Page<CustomerEntity> findByTenantId(UUID tenantId, Pageable pageable);
+	
+	@Query("""
+			select c from CustomerEntity c
+			where c.tenantId = :tenantId
+			  and (
+			    lower(coalesce(c.externalId, '')) like lower(concat('%', :query, '%'))
+			    or lower(coalesce(c.email, '')) like lower(concat('%', :query, '%'))
+			    or lower(coalesce(c.fullName, '')) like lower(concat('%', :query, '%'))
+			    or lower(coalesce(c.plan, '')) like lower(concat('%', :query, '%'))
+			  )
+			""")
+	Page<CustomerEntity> searchByTenantId(UUID tenantId, String query, Pageable pageable);
 }

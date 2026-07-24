@@ -8,8 +8,19 @@ spring:
   kafka:
     listener:
       auto-startup: false
+  ai:
+    model:
+      chat: none
+      embedding: none
 
 insightflow:
+  ai:
+    provider: mock
+  rag:
+    embeddings:
+      provider: mock
+      model: mock
+      dimensions: 1536
   outbox:
     publisher:
       fixed-delay-ms: 600000
@@ -17,4 +28,3 @@ insightflow:
     webhook:
       retry:
         scheduler-fixed-delay-ms: 600000
-

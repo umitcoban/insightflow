@@ -21,13 +21,22 @@ public class AutomationRuleApplicationService {
 	
 	private final AutomationRuleRepository automationRuleRepository;
 	private final CurrentTenantProvider currentTenantProvider;
+	private final AutomationRulePayloadValidator payloadValidator;
+	private final AutomationConditionEvaluator conditionEvaluator;
+	private final AutomationRuleEvaluationService ruleEvaluationService;
 	
 	public AutomationRuleApplicationService(
 			AutomationRuleRepository automationRuleRepository,
-			CurrentTenantProvider currentTenantProvider
+			CurrentTenantProvider currentTenantProvider,
+			AutomationRulePayloadValidator payloadValidator,
+			AutomationConditionEvaluator conditionEvaluator,
+			AutomationRuleEvaluationService ruleEvaluationService
 	) {
 		this.automationRuleRepository = automationRuleRepository;
 		this.currentTenantProvider = currentTenantProvider;
+		this.payloadValidator = payloadValidator;
+		this.conditionEvaluator = conditionEvaluator;
+		this.ruleEvaluationService = ruleEvaluationService;
 	}
 	
 	@Transactional
@@ -40,6 +49,7 @@ public class AutomationRuleApplicationService {
 			Integer priority
 	) {
 		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		payloadValidator.validate(conditionJson, actionJson);
 		
 		return automationRuleRepository.saveNew(
 				tenantId,
@@ -91,6 +101,10 @@ public class AutomationRuleApplicationService {
 		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
 		AutomationRule existingRule = automationRuleRepository.findByTenantIdAndId(tenantId, AutomationRuleId.of(ruleId))
 				.orElseThrow(() -> new AutomationRuleNotFoundException(ruleId));
+		payloadValidator.validate(
+				conditionJson == null ? existingRule.getConditionJson() : conditionJson,
+				actionJson == null ? existingRule.getActionJson() : actionJson
+		);
 		
 		return automationRuleRepository.save(existingRule.updateDetails(
 				name,
@@ -123,6 +137,31 @@ public class AutomationRuleApplicationService {
 		rule.deactivate();
 		
 		return automationRuleRepository.save(rule);
+	}
+	
+	@Transactional(readOnly = true)
+	public boolean dryRun(UUID ruleId, Map<String, Object> payload) {
+		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		AutomationRule rule = automationRuleRepository.findByTenantIdAndId(tenantId, AutomationRuleId.of(ruleId))
+				.orElseThrow(() -> new AutomationRuleNotFoundException(ruleId));
+		return conditionEvaluator.matches(rule.getConditionJson(), payload == null ? Map.of() : payload);
+	}
+	
+	@Transactional
+	public void replay(UUID ruleId, String sourceEventId, Map<String, Object> payload) {
+		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		AutomationRule rule = automationRuleRepository.findByTenantIdAndId(tenantId, AutomationRuleId.of(ruleId))
+				.orElseThrow(() -> new AutomationRuleNotFoundException(ruleId));
+		ruleEvaluationService.evaluate(new com.umityasincoban.insightflow.outbox.application.OutboxEventMessage(
+				sourceEventId == null || sourceEventId.isBlank() ? UUID.randomUUID().toString() : sourceEventId,
+				tenantId.value().toString(),
+				"MANUAL_REPLAY",
+				ruleId.toString(),
+				rule.getTriggerEventType(),
+				1,
+				payload == null ? Map.of() : payload,
+				OffsetDateTime.now().toString()
+		));
 	}
 	
 	private static int normalizePage(Integer page) {

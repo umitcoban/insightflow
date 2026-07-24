@@ -3,6 +3,7 @@ package com.umityasincoban.insightflow.feedback.infrastructure.persistence;
 import com.umityasincoban.insightflow.customer.domain.CustomerId;
 import com.umityasincoban.insightflow.feedback.domain.Feedback;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackId;
+import com.umityasincoban.insightflow.feedback.domain.FeedbackNote;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackPriority;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackRepository;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackSource;
@@ -23,13 +24,16 @@ import java.util.Optional;
 public class JpaFeedbackRepositoryAdapter implements FeedbackRepository {
 	
 	private final FeedbackJpaRepository feedbackJpaRepository;
+	private final FeedbackNoteJpaRepository feedbackNoteJpaRepository;
 	private final FeedbackPersistenceMapper feedbackPersistenceMapper;
 	
 	public JpaFeedbackRepositoryAdapter(
 			FeedbackJpaRepository feedbackJpaRepository,
+			FeedbackNoteJpaRepository feedbackNoteJpaRepository,
 			FeedbackPersistenceMapper feedbackPersistenceMapper
 	) {
 		this.feedbackJpaRepository = feedbackJpaRepository;
+		this.feedbackNoteJpaRepository = feedbackNoteJpaRepository;
 		this.feedbackPersistenceMapper = feedbackPersistenceMapper;
 	}
 	
@@ -112,6 +116,75 @@ public class JpaFeedbackRepositoryAdapter implements FeedbackRepository {
 				riskLevel,
 				aiSummary,
 				suggestedAction
+		);
+	}
+	
+	@Override
+	public Feedback updateStatus(TenantId tenantId, FeedbackId feedbackId, FeedbackStatus status) {
+		FeedbackEntity entity = findEntity(tenantId, feedbackId);
+		entity.updateStatus(status);
+		return feedbackPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	public Feedback updatePriority(TenantId tenantId, FeedbackId feedbackId, FeedbackPriority priority) {
+		FeedbackEntity entity = findEntity(tenantId, feedbackId);
+		entity.updatePriority(priority);
+		return feedbackPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	public Feedback assignTo(TenantId tenantId, FeedbackId feedbackId, String assignedTo) {
+		FeedbackEntity entity = findEntity(tenantId, feedbackId);
+		entity.assignTo(assignedTo);
+		return feedbackPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	public Feedback archive(TenantId tenantId, FeedbackId feedbackId) {
+		FeedbackEntity entity = findEntity(tenantId, feedbackId);
+		entity.archive();
+		return feedbackPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	public Feedback restore(TenantId tenantId, FeedbackId feedbackId) {
+		FeedbackEntity entity = findEntity(tenantId, feedbackId);
+		entity.restore();
+		return feedbackPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	public FeedbackNote addNote(TenantId tenantId, FeedbackId feedbackId, String author, String content) {
+		FeedbackNoteEntity saved = feedbackNoteJpaRepository.save(new FeedbackNoteEntity(
+				tenantId.value(),
+				feedbackId.value(),
+				author,
+				content
+		));
+		return toNote(saved);
+	}
+	
+	@Override
+	public List<FeedbackNote> listNotes(TenantId tenantId, FeedbackId feedbackId) {
+		return feedbackNoteJpaRepository.findByTenantIdAndFeedbackIdOrderByCreatedAtAsc(tenantId.value(), feedbackId.value())
+				.stream()
+				.map(JpaFeedbackRepositoryAdapter::toNote)
+				.toList();
+	}
+	
+	private FeedbackEntity findEntity(TenantId tenantId, FeedbackId feedbackId) {
+		return feedbackJpaRepository.findByTenantIdAndId(tenantId.value(), feedbackId.value()).orElseThrow();
+	}
+	
+	private static FeedbackNote toNote(FeedbackNoteEntity entity) {
+		return new FeedbackNote(
+				entity.getId(),
+				TenantId.of(entity.getTenantId()),
+				FeedbackId.of(entity.getFeedbackId()),
+				entity.getAuthor(),
+				entity.getContent(),
+				entity.getCreatedAt()
 		);
 	}
 	

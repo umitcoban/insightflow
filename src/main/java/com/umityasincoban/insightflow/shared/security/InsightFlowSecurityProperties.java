@@ -14,6 +14,8 @@ public class InsightFlowSecurityProperties {
 	@NotBlank
 	private String audience = "insightflow-api";
 	
+	private String jwkSetUri;
+	
 	@NotBlank
 	private String tenantIdClaim = "tenant_id";
 	
@@ -34,6 +36,21 @@ public class InsightFlowSecurityProperties {
 	
 	public void setAudience(String audience) {
 		this.audience = audience;
+	}
+	
+	public String getJwkSetUri() {
+		return jwkSetUri;
+	}
+	
+	public void setJwkSetUri(String jwkSetUri) {
+		this.jwkSetUri = jwkSetUri;
+	}
+	
+	public String effectiveJwkSetUri() {
+		if (jwkSetUri != null && !jwkSetUri.isBlank()) {
+			return jwkSetUri;
+		}
+		return issuerUri.replaceAll("/+$", "") + "/protocol/openid-connect/certs";
 	}
 	
 	public String getTenantIdClaim() {

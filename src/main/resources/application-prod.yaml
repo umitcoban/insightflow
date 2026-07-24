@@ -17,14 +17,47 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${INSIGHTFLOW_SECURITY_JWT_ISSUER_URI}
+  ai:
+    model:
+      chat: ${SPRING_AI_MODEL_CHAT:ollama}
+      embedding: ${SPRING_AI_MODEL_EMBEDDING:ollama}
+    ollama:
+      base-url: ${SPRING_AI_OLLAMA_BASE_URL:http://ollama:11434}
+      init:
+        pull-model-strategy: ${SPRING_AI_OLLAMA_PULL_MODEL_STRATEGY:never}
+      chat:
+        model: ${SPRING_AI_OLLAMA_CHAT_MODEL:llama3.1}
+      embedding:
+        model: ${SPRING_AI_OLLAMA_EMBEDDING_MODEL:mxbai-embed-large}
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${SPRING_AI_OPENAI_CHAT_MODEL:gpt-5.6-terra}
+      embedding:
+        options:
+          model: ${SPRING_AI_OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
 
 insightflow:
   security:
     jwt:
       issuer-uri: ${INSIGHTFLOW_SECURITY_JWT_ISSUER_URI}
+      jwk-set-uri: ${INSIGHTFLOW_SECURITY_JWT_JWK_SET_URI:}
       audience: ${INSIGHTFLOW_SECURITY_JWT_AUDIENCE}
+  ai:
+    provider: ${INSIGHTFLOW_AI_PROVIDER:spring-ai}
+  search:
+    elasticsearch:
+      base-url: ${INSIGHTFLOW_ELASTICSEARCH_URL}
+      username: ${INSIGHTFLOW_ELASTICSEARCH_USERNAME:}
+      password: ${INSIGHTFLOW_ELASTICSEARCH_PASSWORD:}
+  rag:
+    embeddings:
+      provider: ${INSIGHTFLOW_RAG_EMBEDDINGS_PROVIDER:spring-ai}
+      model: ${INSIGHTFLOW_RAG_EMBEDDINGS_MODEL:mxbai-embed-large}
+      dimensions: ${INSIGHTFLOW_RAG_EMBEDDINGS_DIMENSIONS:1024}
 
 logging:
   level:
     root: INFO
-

@@ -9,6 +9,8 @@ public final class FeedbackEvents {
 	
 	public static final String AI_ANALYSIS_COMPLETED = "feedback.ai-analysis-completed";
 	public static final int AI_ANALYSIS_COMPLETED_VERSION = 1;
+	public static final String FEEDBACK_UPDATED = "feedback.updated";
+	public static final int FEEDBACK_UPDATED_VERSION = 1;
 	
 	private FeedbackEvents() {
 	}

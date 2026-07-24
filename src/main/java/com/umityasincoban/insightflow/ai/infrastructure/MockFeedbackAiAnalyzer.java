@@ -4,9 +4,11 @@ import com.umityasincoban.insightflow.ai.domain.FeedbackAiAnalysisResult;
 import com.umityasincoban.insightflow.ai.domain.FeedbackAiAnalyzer;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackRiskLevel;
 import com.umityasincoban.insightflow.feedback.domain.FeedbackSentiment;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "insightflow.ai", name = "provider", havingValue = "mock", matchIfMissing = true)
 public class MockFeedbackAiAnalyzer implements FeedbackAiAnalyzer {
 	
 	@Override

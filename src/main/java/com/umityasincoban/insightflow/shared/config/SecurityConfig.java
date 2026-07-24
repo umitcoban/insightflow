@@ -54,16 +54,34 @@ public class SecurityConfig {
 						.requestMatchers("/actuator/health").permitAll()
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/tenants").hasRole(SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/tenants/**").hasRole(SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/tenants/*/suspend").hasRole(SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/tenants/*/reactivate").hasRole(SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/tenants/*/settings").hasRole(SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/customers/*").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers/*/activate").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers/*/deactivate").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/feedbacks").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/feedbacks/*/status").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/feedbacks/*/priority").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/feedbacks/*/assignment").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/feedbacks/*/archive").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/feedbacks/*/restore").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/feedbacks/*/notes").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/automation/rules/*").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules/*/activate").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules/*/deactivate").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules/*/dry-run").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/automation/rules/*/replay").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/knowledge/documents").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.DELETE, "/api/v1/knowledge/documents/*").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/feedbacks/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/automation/rules/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/automation/executions/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/knowledge/documents/**").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
+						.requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/assistant/questions").hasAnyRole(SecurityRoles.TENANT_ADMIN, SecurityRoles.SUPPORT_AGENT, SecurityRoles.PLATFORM_ADMIN)
 						.requestMatchers("/api/**").authenticated()
 						.anyRequest().denyAll()
 				)
@@ -77,7 +95,7 @@ public class SecurityConfig {
 	
 	@Bean
 	JwtDecoder jwtDecoder(InsightFlowSecurityProperties securityProperties) {
-		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withIssuerLocation(securityProperties.getIssuerUri()).build();
+		NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(securityProperties.effectiveJwkSetUri()).build();
 		OAuth2TokenValidator<Jwt> validator = new DelegatingOAuth2TokenValidator<>(
 				JwtValidators.createDefaultWithIssuer(securityProperties.getIssuerUri()),
 				new JwtAudienceValidator(securityProperties.getAudience())

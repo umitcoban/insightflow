@@ -13,6 +13,8 @@ public class Customer {
 	private final String email;
 	private final String fullName;
 	private final String plan;
+	private final CustomerStatus status;
+	private final OffsetDateTime deactivatedAt;
 	private final OffsetDateTime createdAt;
 	private final OffsetDateTime updatedAt;
 	
@@ -23,6 +25,8 @@ public class Customer {
 			String email,
 			String fullName,
 			String plan,
+			CustomerStatus status,
+			OffsetDateTime deactivatedAt,
 			OffsetDateTime createdAt,
 			OffsetDateTime updatedAt
 	) {
@@ -32,6 +36,8 @@ public class Customer {
 		this.email = normalizeOptional(email);
 		this.fullName = normalizeOptional(fullName);
 		this.plan = normalizeOptional(plan);
+		this.status = Objects.requireNonNull(status, "Customer status cannot be null");
+		this.deactivatedAt = deactivatedAt;
 		this.createdAt = Objects.requireNonNull(createdAt, "Customer createdAt cannot be null");
 		this.updatedAt = Objects.requireNonNull(updatedAt, "Customer updatedAt cannot be null");
 	}
@@ -58,6 +64,14 @@ public class Customer {
 	
 	public String getPlan() {
 		return plan;
+	}
+	
+	public CustomerStatus getStatus() {
+		return status;
+	}
+	
+	public OffsetDateTime getDeactivatedAt() {
+		return deactivatedAt;
 	}
 	
 	public OffsetDateTime getCreatedAt() {

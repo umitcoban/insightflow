@@ -24,6 +24,8 @@ public record FeedbackResponse(
 		FeedbackRiskLevel riskLevel,
 		String aiSummary,
 		String suggestedAction,
+		String assignedTo,
+		OffsetDateTime archivedAt,
 		OffsetDateTime createdAt,
 		OffsetDateTime updatedAt
 ) {
@@ -43,6 +45,8 @@ public record FeedbackResponse(
 				feedback.getRiskLevel(),
 				feedback.getAiSummary(),
 				feedback.getSuggestedAction(),
+				feedback.getAssignedTo(),
+				feedback.getArchivedAt(),
 				feedback.getCreatedAt(),
 				feedback.getUpdatedAt()
 		);

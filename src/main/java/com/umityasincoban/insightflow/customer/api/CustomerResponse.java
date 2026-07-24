@@ -12,6 +12,8 @@ public record CustomerResponse(
 		String email,
 		String fullName,
 		String plan,
+		String status,
+		OffsetDateTime deactivatedAt,
 		OffsetDateTime createdAt,
 		OffsetDateTime updatedAt
 ) {
@@ -24,6 +26,8 @@ public record CustomerResponse(
 				customer.getEmail(),
 				customer.getFullName(),
 				customer.getPlan(),
+				customer.getStatus().name(),
+				customer.getDeactivatedAt(),
 				customer.getCreatedAt(),
 				customer.getUpdatedAt()
 		);

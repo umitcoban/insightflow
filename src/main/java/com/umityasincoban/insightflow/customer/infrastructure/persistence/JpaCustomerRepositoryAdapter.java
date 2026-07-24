@@ -96,6 +96,33 @@ public class JpaCustomerRepositoryAdapter implements CustomerRepository {
 				.map(customerPersistenceMapper::toDomain);
 	}
 	
+	@Override
+	public Page<Customer> searchByTenantId(TenantId tenantId, String query, Pageable pageable) {
+		return customerJpaRepository.searchByTenantId(tenantId.value(), query == null ? "" : query.strip(), pageable)
+				.map(customerPersistenceMapper::toDomain);
+	}
+	
+	@Override
+	public Customer update(TenantId tenantId, CustomerId customerId, String externalId, String email, String fullName, String plan) {
+		CustomerEntity entity = customerJpaRepository.findByTenantIdAndId(tenantId.value(), customerId.value()).orElseThrow();
+		entity.updateDetails(normalizeOptional(externalId), normalizeEmail(email), normalizeOptional(fullName), normalizeOptional(plan));
+		return customerPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	public Customer deactivate(TenantId tenantId, CustomerId customerId) {
+		CustomerEntity entity = customerJpaRepository.findByTenantIdAndId(tenantId.value(), customerId.value()).orElseThrow();
+		entity.deactivate();
+		return customerPersistenceMapper.toDomain(entity);
+	}
+	
+	@Override
+	public Customer activate(TenantId tenantId, CustomerId customerId) {
+		CustomerEntity entity = customerJpaRepository.findByTenantIdAndId(tenantId.value(), customerId.value()).orElseThrow();
+		entity.activate();
+		return customerPersistenceMapper.toDomain(entity);
+	}
+	
 	private static String normalizeOptional(String value) {
 		if (value == null || value.isBlank()) {
 			return null;

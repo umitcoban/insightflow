@@ -12,8 +12,18 @@ spring:
           issuer-uri: http://localhost:8081/realms/insightflow
 
 insightflow:
+  ai:
+    provider: spring-ai
   security:
     jwt:
       issuer-uri: http://localhost:8081/realms/insightflow
+      jwk-set-uri: http://localhost:8081/realms/insightflow/protocol/openid-connect/certs
       audience: insightflow-api
-
+  search:
+    elasticsearch:
+      base-url: http://localhost:9200
+  rag:
+    embeddings:
+      provider: spring-ai
+      model: mxbai-embed-large
+      dimensions: 1024

@@ -69,6 +69,12 @@ public class FeedbackEntity {
 	@Column(name = "suggested_action", columnDefinition = "text")
 	private String suggestedAction;
 	
+	@Column(name = "assigned_to", length = 180)
+	private String assignedTo;
+	
+	@Column(name = "archived_at")
+	private OffsetDateTime archivedAt;
+	
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "metadata", nullable = false, columnDefinition = "jsonb")
 	private Map<String, Object> metadata;
@@ -156,6 +162,14 @@ public class FeedbackEntity {
 		return suggestedAction;
 	}
 	
+	public String getAssignedTo() {
+		return assignedTo;
+	}
+	
+	public OffsetDateTime getArchivedAt() {
+		return archivedAt;
+	}
+	
 	public Map<String, Object> getMetadata() {
 		return metadata;
 	}
@@ -181,5 +195,34 @@ public class FeedbackEntity {
 		this.aiSummary = aiSummary;
 		this.suggestedAction = suggestedAction;
 		this.updatedAt = OffsetDateTime.now();
+	}
+	
+	public void updateStatus(FeedbackStatus status) {
+		this.status = status;
+		if (FeedbackStatus.ARCHIVED.equals(status) && this.archivedAt == null) {
+			this.archivedAt = OffsetDateTime.now();
+		}
+		if (!FeedbackStatus.ARCHIVED.equals(status)) {
+			this.archivedAt = null;
+		}
+		this.updatedAt = OffsetDateTime.now();
+	}
+	
+	public void updatePriority(FeedbackPriority priority) {
+		this.priority = priority;
+		this.updatedAt = OffsetDateTime.now();
+	}
+	
+	public void assignTo(String assignedTo) {
+		this.assignedTo = assignedTo == null || assignedTo.isBlank() ? null : assignedTo.strip();
+		this.updatedAt = OffsetDateTime.now();
+	}
+	
+	public void archive() {
+		updateStatus(FeedbackStatus.ARCHIVED);
+	}
+	
+	public void restore() {
+		updateStatus(FeedbackStatus.IN_REVIEW);
 	}
 }

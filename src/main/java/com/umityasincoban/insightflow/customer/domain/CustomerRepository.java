@@ -29,4 +29,12 @@ public interface CustomerRepository {
 	boolean existsByTenantIdAndEmail(TenantId tenantId, String email);
 	
 	Page<Customer> findByTenantId(TenantId tenantId, Pageable pageable);
+	
+	Page<Customer> searchByTenantId(TenantId tenantId, String query, Pageable pageable);
+	
+	Customer update(TenantId tenantId, CustomerId customerId, String externalId, String email, String fullName, String plan);
+	
+	Customer deactivate(TenantId tenantId, CustomerId customerId);
+	
+	Customer activate(TenantId tenantId, CustomerId customerId);
 }
