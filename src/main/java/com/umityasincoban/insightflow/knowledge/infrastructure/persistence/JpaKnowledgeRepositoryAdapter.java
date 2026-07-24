@@ -56,6 +56,14 @@ public class JpaKnowledgeRepositoryAdapter implements KnowledgeRepository {
 	}
 	
 	@Override
+	public List<KnowledgeChunk> findChunksByTenantId(TenantId tenantId) {
+		return chunkJpaRepository.findByTenantIdOrderByCreatedAtDesc(tenantId.value())
+				.stream()
+				.map(JpaKnowledgeRepositoryAdapter::toChunk)
+				.toList();
+	}
+	
+	@Override
 	public void deleteByTenantIdAndId(TenantId tenantId, UUID documentId) {
 		chunkJpaRepository.deleteByTenantIdAndDocumentId(tenantId.value(), documentId);
 		documentJpaRepository.deleteByTenantIdAndId(tenantId.value(), documentId);
@@ -85,4 +93,3 @@ public class JpaKnowledgeRepositoryAdapter implements KnowledgeRepository {
 		);
 	}
 }
-

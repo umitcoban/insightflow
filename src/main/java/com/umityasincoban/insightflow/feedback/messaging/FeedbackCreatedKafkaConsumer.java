@@ -55,9 +55,19 @@ public class FeedbackCreatedKafkaConsumer {
 				message.payload()
 		);
 		
-		feedbackAiEnrichmentService.enrichFeedback(
-				UUID.fromString(message.tenantId()),
-				UUID.fromString(message.aggregateId())
-		);
+		try {
+			feedbackAiEnrichmentService.enrichFeedback(
+					UUID.fromString(message.tenantId()),
+					UUID.fromString(message.aggregateId())
+			);
+		} catch (RuntimeException exception) {
+			log.warn(
+					"Feedback AI enrichment skipped eventId={} tenantId={} aggregateId={} reason={}",
+					message.eventId(),
+					message.tenantId(),
+					message.aggregateId(),
+					exception.getMessage()
+			);
+		}
 	}
 }

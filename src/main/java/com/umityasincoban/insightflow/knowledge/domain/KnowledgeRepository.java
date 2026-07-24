@@ -21,6 +21,7 @@ public interface KnowledgeRepository {
 	
 	List<KnowledgeChunk> findChunksByTenantIdAndDocumentId(TenantId tenantId, UUID documentId);
 	
+	List<KnowledgeChunk> findChunksByTenantId(TenantId tenantId);
+	
 	void deleteByTenantIdAndId(TenantId tenantId, UUID documentId);
 }
-

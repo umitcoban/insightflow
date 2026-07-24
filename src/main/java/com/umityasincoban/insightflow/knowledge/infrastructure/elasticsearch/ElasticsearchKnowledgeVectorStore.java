@@ -74,14 +74,22 @@ public class ElasticsearchKnowledgeVectorStore implements KnowledgeVectorStore {
 	
 	@Override
 	public void deleteDocument(TenantId tenantId, UUID documentId) {
-		restClient.post()
-				.uri("/{index}/_delete_by_query", properties.getKnowledgeIndex())
-				.body(Map.of("query", Map.of("bool", Map.of("filter", List.of(
-						Map.of("term", Map.of("tenantId", tenantId.value().toString())),
-						Map.of("term", Map.of("documentId", documentId.toString()))
-				)))))
-				.retrieve()
-				.toBodilessEntity();
+		try {
+			restClient.post()
+					.uri("/{index}/_delete_by_query", properties.getKnowledgeIndex())
+					.body(Map.of("query", Map.of("bool", Map.of("filter", List.of(
+							Map.of("term", Map.of("tenantId", tenantId.value().toString())),
+							Map.of("term", Map.of("documentId", documentId.toString()))
+					)))))
+					.retrieve()
+					.toBodilessEntity();
+		} catch (RestClientResponseException exception) {
+			if (exception.getStatusCode().value() != 404) {
+				throw exception;
+			}
+		} catch (RestClientException ignored) {
+			// Deleting the source document should remain possible when the vector index is unavailable.
+		}
 	}
 	
 	@Override

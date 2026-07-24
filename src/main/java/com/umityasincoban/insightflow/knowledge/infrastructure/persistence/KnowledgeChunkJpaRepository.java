@@ -9,6 +9,7 @@ public interface KnowledgeChunkJpaRepository extends JpaRepository<KnowledgeChun
 	
 	List<KnowledgeChunkEntity> findByTenantIdAndDocumentIdOrderByChunkIndexAsc(UUID tenantId, UUID documentId);
 	
+	List<KnowledgeChunkEntity> findByTenantIdOrderByCreatedAtDesc(UUID tenantId);
+	
 	void deleteByTenantIdAndDocumentId(UUID tenantId, UUID documentId);
 }
-
