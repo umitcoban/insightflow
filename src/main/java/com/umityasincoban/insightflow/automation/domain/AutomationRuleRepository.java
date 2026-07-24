@@ -27,4 +27,6 @@ public interface AutomationRuleRepository {
 	List<AutomationRule> findActiveByTenantIdAndTriggerEventType(TenantId tenantId, String triggerEventType);
 	
 	AutomationRule save(AutomationRule automationRule);
+	
+	void deleteByTenantIdAndId(TenantId tenantId, AutomationRuleId ruleId);
 }

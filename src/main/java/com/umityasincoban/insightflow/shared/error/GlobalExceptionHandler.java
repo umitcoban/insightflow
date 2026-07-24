@@ -1,6 +1,7 @@
 package com.umityasincoban.insightflow.shared.error;
 
 import com.umityasincoban.insightflow.automation.application.AutomationExecutionNotFoundException;
+import com.umityasincoban.insightflow.automation.application.AutomationRuleDeletionNotAllowedException;
 import com.umityasincoban.insightflow.automation.application.AutomationRuleNotFoundException;
 import com.umityasincoban.insightflow.feedback.application.FeedbackNotFoundException;
 import com.umityasincoban.insightflow.knowledge.application.KnowledgeAssistantUnavailableException;
@@ -243,6 +244,25 @@ public class GlobalExceptionHandler {
 		problemDetail.setType(URI.create("https://insightflow.dev/problems/automation-execution-not-found"));
 		problemDetail.setInstance(URI.create(request.getRequestURI()));
 		problemDetail.setProperty("errorCode", "AUTOMATION_EXECUTION_NOT_FOUND");
+		addCommonProperties(problemDetail);
+		
+		return problemDetail;
+	}
+	
+	@ExceptionHandler(AutomationRuleDeletionNotAllowedException.class)
+	public ProblemDetail handleAutomationRuleDeletionNotAllowed(
+			AutomationRuleDeletionNotAllowedException exception,
+			HttpServletRequest request
+	) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+				HttpStatus.CONFLICT,
+				exception.getMessage()
+		);
+		
+		problemDetail.setTitle("Automation rule deletion not allowed");
+		problemDetail.setType(URI.create("https://insightflow.dev/problems/automation-rule-deletion-not-allowed"));
+		problemDetail.setInstance(URI.create(request.getRequestURI()));
+		problemDetail.setProperty("errorCode", "AUTOMATION_RULE_DELETION_NOT_ALLOWED");
 		addCommonProperties(problemDetail);
 		
 		return problemDetail;

@@ -122,6 +122,11 @@ public class JpaAutomationExecutionRepositoryAdapter implements AutomationExecut
 		);
 	}
 	
+	@Override
+	public boolean existsByTenantIdAndRuleId(TenantId tenantId, AutomationRuleId ruleId) {
+		return automationExecutionJpaRepository.existsByTenantIdAndRuleId(tenantId.value(), ruleId.value());
+	}
+	
 	private AutomationExecutionEntity getTenantScopedEntity(TenantId tenantId, AutomationExecutionId executionId) {
 		return automationExecutionJpaRepository.findByTenantIdAndId(tenantId.value(), executionId.value())
 				.orElseThrow(() -> new IllegalStateException("Automation execution not found: " + executionId.value()));

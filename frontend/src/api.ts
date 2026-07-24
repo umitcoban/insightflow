@@ -33,6 +33,7 @@ export type Customer = {
 
 export type Feedback = {
   id: string;
+  tenantId?: string;
   customerId?: string;
   source: string;
   title: string;
@@ -45,12 +46,23 @@ export type Feedback = {
   aiSummary?: string;
   suggestedAction?: string;
   assignedTo?: string;
+  archivedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 };
 
+export type FeedbackNote = {
+  id: string;
+  tenantId: string;
+  feedbackId: string;
+  author: string;
+  content: string;
+  createdAt?: string;
+};
+
 export type AutomationRule = {
   id: string;
+  tenantId?: string;
   name: string;
   description?: string;
   triggerEventType: string;
@@ -60,6 +72,10 @@ export type AutomationRule = {
   priority: number;
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type AutomationDryRunResponse = {
+  matched: boolean;
 };
 
 export type AutomationExecution = {
@@ -165,18 +181,44 @@ export const api = {
   readiness: () => request<HealthResponse>("/actuator/health/readiness", null, { tenant: false }),
   customers: (session: Session, page = 0) => request<Page<Customer>>(`/api/v1/customers?page=${page}&size=8`, session),
   createCustomer: (session: Session, body: Partial<Customer>) => request<Customer>("/api/v1/customers", session, { method: "POST", body }),
-  feedbacks: (session: Session, query = "") => request<Page<Feedback>>(`/api/v1/feedbacks${query || "?page=0&size=8"}`, session),
+  feedbacks: (session: Session, query = "") => request<Page<Feedback>>(`/api/v1/feedbacks${query || "?page=0&size=12"}`, session),
   searchFeedbacks: (session: Session, q: string) =>
-    request<Page<Feedback>>(`/api/v1/feedbacks/search?q=${encodeURIComponent(q)}&page=0&size=8`, session),
+    request<Page<Feedback>>(`/api/v1/feedbacks/search?q=${encodeURIComponent(q)}&page=0&size=12`, session),
+  feedback: (session: Session, id: string) => request<Feedback>(`/api/v1/feedbacks/${id}`, session),
   createFeedback: (session: Session, body: Record<string, unknown>) =>
     request<Feedback>("/api/v1/feedbacks", session, { method: "POST", body }),
   updateFeedbackStatus: (session: Session, id: string, status: string) =>
     request<Feedback>(`/api/v1/feedbacks/${id}/status`, session, { method: "PATCH", body: { status } }),
-  automationRules: (session: Session) => request<Page<AutomationRule>>("/api/v1/automation/rules?page=0&size=8", session),
+  updateFeedbackPriority: (session: Session, id: string, priority: string) =>
+    request<Feedback>(`/api/v1/feedbacks/${id}/priority`, session, { method: "PATCH", body: { priority } }),
+  assignFeedback: (session: Session, id: string, assignedTo: string) =>
+    request<Feedback>(`/api/v1/feedbacks/${id}/assignment`, session, { method: "PATCH", body: { assignedTo } }),
+  archiveFeedback: (session: Session, id: string) =>
+    request<Feedback>(`/api/v1/feedbacks/${id}/archive`, session, { method: "POST" }),
+  restoreFeedback: (session: Session, id: string) =>
+    request<Feedback>(`/api/v1/feedbacks/${id}/restore`, session, { method: "POST" }),
+  feedbackNotes: (session: Session, id: string) => request<FeedbackNote[]>(`/api/v1/feedbacks/${id}/notes`, session),
+  addFeedbackNote: (session: Session, id: string, content: string) =>
+    request<FeedbackNote>(`/api/v1/feedbacks/${id}/notes`, session, { method: "POST", body: { content } }),
+  analyzeFeedback: (session: Session, id: string) =>
+    request<void>(`/api/v1/feedbacks/${id}/ai-analysis`, session, { method: "POST" }),
+  automationRules: (session: Session) => request<Page<AutomationRule>>("/api/v1/automation/rules?page=0&size=12", session),
   createAutomationRule: (session: Session, body: Record<string, unknown>) =>
     request<AutomationRule>("/api/v1/automation/rules", session, { method: "POST", body }),
+  updateAutomationRule: (session: Session, id: string, body: Record<string, unknown>) =>
+    request<AutomationRule>(`/api/v1/automation/rules/${id}`, session, { method: "PATCH", body }),
+  activateAutomationRule: (session: Session, id: string) =>
+    request<AutomationRule>(`/api/v1/automation/rules/${id}/activate`, session, { method: "POST" }),
+  deactivateAutomationRule: (session: Session, id: string) =>
+    request<AutomationRule>(`/api/v1/automation/rules/${id}/deactivate`, session, { method: "POST" }),
+  deleteAutomationRule: (session: Session, id: string) =>
+    request<void>(`/api/v1/automation/rules/${id}`, session, { method: "DELETE" }),
+  dryRunAutomationRule: (session: Session, id: string, payload: Record<string, unknown>) =>
+    request<AutomationDryRunResponse>(`/api/v1/automation/rules/${id}/dry-run`, session, { method: "POST", body: { payload } }),
+  replayAutomationRule: (session: Session, id: string, payload: Record<string, unknown>) =>
+    request<void>(`/api/v1/automation/rules/${id}/replay`, session, { method: "POST", body: { payload } }),
   automationExecutions: (session: Session) =>
-    request<Page<AutomationExecution>>("/api/v1/automation/executions?page=0&size=8", session),
+    request<Page<AutomationExecution>>("/api/v1/automation/executions?page=0&size=12", session),
   knowledgeDocuments: (session: Session) => request<Page<KnowledgeDocument>>("/api/v1/knowledge/documents?page=0&size=8", session),
   createKnowledgeDocument: (session: Session, body: Record<string, unknown>) =>
     request<KnowledgeDocument>("/api/v1/knowledge/documents", session, { method: "POST", body }),

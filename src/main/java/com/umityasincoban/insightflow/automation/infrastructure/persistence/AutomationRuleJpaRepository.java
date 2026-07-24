@@ -15,6 +15,8 @@ public interface AutomationRuleJpaRepository extends JpaRepository<AutomationRul
 	
 	Optional<AutomationRuleEntity> findByTenantIdAndId(UUID tenantId, UUID id);
 	
+	void deleteByTenantIdAndId(UUID tenantId, UUID id);
+	
 	List<AutomationRuleEntity> findByTenantIdAndTriggerEventTypeAndStatusOrderByPriorityDescCreatedAtDesc(
 			UUID tenantId,
 			String triggerEventType,

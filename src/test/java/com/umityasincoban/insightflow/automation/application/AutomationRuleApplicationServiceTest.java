@@ -1,5 +1,6 @@
 package com.umityasincoban.insightflow.automation.application;
 
+import com.umityasincoban.insightflow.automation.domain.AutomationExecutionRepository;
 import com.umityasincoban.insightflow.automation.domain.AutomationRule;
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleId;
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleRepository;
@@ -15,16 +16,20 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AutomationRuleApplicationServiceTest {
 	
 	private final AutomationRuleRepository automationRuleRepository = mock(AutomationRuleRepository.class);
+	private final AutomationExecutionRepository automationExecutionRepository = mock(AutomationExecutionRepository.class);
 	private final CurrentTenantProvider currentTenantProvider = mock(CurrentTenantProvider.class);
 	private final AutomationRuleApplicationService service = new AutomationRuleApplicationService(
 			automationRuleRepository,
+			automationExecutionRepository,
 			currentTenantProvider,
 			new AutomationRulePayloadValidator(),
 			new AutomationConditionEvaluator(),
@@ -94,6 +99,39 @@ class AutomationRuleApplicationServiceTest {
 		AutomationRule activatedRule = service.activateRule(ruleId);
 		
 		assertThat(activatedRule.getStatus()).isEqualTo(AutomationRuleStatus.ACTIVE);
+	}
+	
+	@Test
+	void deleteRuleRemovesRuleWhenExecutionHistoryDoesNotExist() {
+		TenantId tenantId = TenantId.of(UUID.randomUUID());
+		UUID ruleId = UUID.randomUUID();
+		AutomationRule existingRule = rule(tenantId, ruleId, AutomationRuleStatus.INACTIVE);
+		
+		when(currentTenantProvider.getCurrentTenantId()).thenReturn(tenantId);
+		when(automationRuleRepository.findByTenantIdAndId(tenantId, AutomationRuleId.of(ruleId)))
+				.thenReturn(Optional.of(existingRule));
+		when(automationExecutionRepository.existsByTenantIdAndRuleId(tenantId, AutomationRuleId.of(ruleId)))
+				.thenReturn(false);
+		
+		service.deleteRule(ruleId);
+		
+		verify(automationRuleRepository).deleteByTenantIdAndId(tenantId, AutomationRuleId.of(ruleId));
+	}
+	
+	@Test
+	void deleteRuleRejectsRuleWithExecutionHistory() {
+		TenantId tenantId = TenantId.of(UUID.randomUUID());
+		UUID ruleId = UUID.randomUUID();
+		AutomationRule existingRule = rule(tenantId, ruleId, AutomationRuleStatus.ACTIVE);
+		
+		when(currentTenantProvider.getCurrentTenantId()).thenReturn(tenantId);
+		when(automationRuleRepository.findByTenantIdAndId(tenantId, AutomationRuleId.of(ruleId)))
+				.thenReturn(Optional.of(existingRule));
+		when(automationExecutionRepository.existsByTenantIdAndRuleId(tenantId, AutomationRuleId.of(ruleId)))
+				.thenReturn(true);
+		
+		assertThatThrownBy(() -> service.deleteRule(ruleId))
+				.isInstanceOf(AutomationRuleDeletionNotAllowedException.class);
 	}
 	
 	private static AutomationRule rule(TenantId tenantId, UUID ruleId, AutomationRuleStatus status) {

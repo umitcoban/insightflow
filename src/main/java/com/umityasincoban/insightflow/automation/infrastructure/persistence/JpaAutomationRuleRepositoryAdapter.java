@@ -104,4 +104,9 @@ public class JpaAutomationRuleRepositoryAdapter implements AutomationRuleReposit
 		
 		return automationRulePersistenceMapper.toDomain(entity);
 	}
+	
+	@Override
+	public void deleteByTenantIdAndId(TenantId tenantId, AutomationRuleId ruleId) {
+		automationRuleJpaRepository.deleteByTenantIdAndId(tenantId.value(), ruleId.value());
+	}
 }

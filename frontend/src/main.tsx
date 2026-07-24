@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import {
   Activity,
   AlertCircle,
+  Archive,
   ArrowRight,
   Bot,
   CheckCircle2,
@@ -14,8 +15,10 @@ import {
   Gauge,
   LogOut,
   MessageSquareText,
+  Play,
   Plus,
   RefreshCcw,
+  Save,
   Search,
   ShieldCheck,
   Sparkles,
@@ -35,7 +38,8 @@ import {
   AutomationRule,
   AutomationExecution,
   KnowledgeDocument,
-  AssistantAnswer
+  AssistantAnswer,
+  FeedbackNote
 } from "./api";
 import { clearSession, loadSession, saveSession } from "./storage";
 import "./styles.css";
@@ -63,6 +67,10 @@ const emptyData: AppData = {
   executions: [],
   documents: []
 };
+
+const feedbackSources = ["MANUAL", "API", "EMAIL", "APP_REVIEW"];
+const feedbackPriorities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+const feedbackStatuses = ["NEW", "IN_REVIEW", "RESOLVED", "ARCHIVED"];
 
 function App() {
   const [session, setSession] = useState<Session | null>(() => loadSession());
@@ -327,7 +335,26 @@ function FeedbackView({
 }) {
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState<Feedback | null>(data.feedbacks[0] ?? null);
+  const [notes, setNotes] = useState<FeedbackNote[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const visible = query ? data.searchResults : data.feedbacks;
+
+  useEffect(() => {
+    if (!selected && data.feedbacks.length) {
+      setSelected(data.feedbacks[0]);
+    }
+  }, [data.feedbacks, selected]);
+
+  useEffect(() => {
+    if (!selected) {
+      setNotes([]);
+      return;
+    }
+    api.feedbackNotes(session, selected.id)
+      .then(setNotes)
+      .catch((error) => setNotice(toMessage(error)));
+  }, [selected?.id, session.accessToken]);
 
   async function search() {
     if (!query.trim()) {
@@ -342,22 +369,98 @@ function FeedbackView({
     }
   }
 
-  async function createSample() {
+  async function createFeedback(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     setCreating(true);
     try {
       const item = await api.createFeedback(session, {
-        source: "MANUAL",
-        title: "Checkout screen freezes",
-        content: "Customer reports that checkout freezes after tapping pay on the latest mobile app build.",
-        priority: "HIGH",
-        metadata: { channel: "support", platform: "ios" }
+        customerId: form.get("customerId")?.toString() || undefined,
+        source: form.get("source")?.toString(),
+        title: form.get("title")?.toString(),
+        content: form.get("content")?.toString(),
+        priority: form.get("priority")?.toString(),
+        metadata: parseJsonObject(form.get("metadata")?.toString(), "Metadata")
       });
+      formElement.reset();
       setData((current) => ({ ...current, feedbacks: [item, ...current.feedbacks] }));
+      setSelected(item);
       setNotice("Feedback created. AI enrichment will arrive through the event loop.");
     } catch (error) {
       setNotice(toMessage(error));
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function openFeedback(item: Feedback) {
+    setLoadingDetails(true);
+    try {
+      const fresh = await api.feedback(session, item.id);
+      setSelected(fresh);
+      setData((current) => ({ ...current, feedbacks: replaceById(current.feedbacks, fresh) }));
+    } catch (error) {
+      setNotice(toMessage(error));
+    } finally {
+      setLoadingDetails(false);
+    }
+  }
+
+  async function updateSelected(action: () => Promise<Feedback>, message: string) {
+    if (!selected) {
+      return;
+    }
+    try {
+      const updated = await action();
+      setSelected(updated);
+      setData((current) => ({
+        ...current,
+        feedbacks: replaceById(current.feedbacks, updated),
+        searchResults: replaceById(current.searchResults, updated)
+      }));
+      setNotice(message);
+    } catch (error) {
+      setNotice(toMessage(error));
+    }
+  }
+
+  async function addNote(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) {
+      return;
+    }
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    try {
+      const note = await api.addFeedbackNote(session, selected.id, form.get("content")?.toString() ?? "");
+      formElement.reset();
+      setNotes((current) => [note, ...current]);
+      setNotice("Note added.");
+    } catch (error) {
+      setNotice(toMessage(error));
+    }
+  }
+  
+  async function analyzeSelected() {
+    if (!selected) {
+      return;
+    }
+    setLoadingDetails(true);
+    try {
+      await api.analyzeFeedback(session, selected.id);
+      const updated = await api.feedback(session, selected.id);
+      setSelected(updated);
+      setData((current) => ({
+        ...current,
+        feedbacks: replaceById(current.feedbacks, updated),
+        searchResults: replaceById(current.searchResults, updated)
+      }));
+      setNotice("Feedback AI analysis completed.");
+    } catch (error) {
+      setNotice(toMessage(error));
+    } finally {
+      setLoadingDetails(false);
     }
   }
 
@@ -369,13 +472,122 @@ function FeedbackView({
           <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === "Enter" && void search()} placeholder="Search feedback by title, customer signal, category..." />
         </div>
         <button className="secondary-button" onClick={search}>Search</button>
-        <button className="primary-button" onClick={createSample} disabled={creating}>
-          <Plus size={17} /> Create sample
-        </button>
       </div>
-      <Panel title={query ? "Search Results" : "Feedback Queue"} action={`${visible.length} visible`}>
-        <FeedbackList items={visible} />
-      </Panel>
+      <div className="work-grid">
+        <div className="content-stack">
+          <form className="form-card dense-form" onSubmit={createFeedback}>
+            <div className="form-header">
+              <h3>Create Feedback</h3>
+              <button className="primary-button" disabled={creating}><Plus size={17} /> Create</button>
+            </div>
+            <div className="form-grid">
+              <label>Customer
+                <select name="customerId" defaultValue="">
+                  <option value="">No customer link</option>
+                  {data.customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>{customer.fullName} · {customer.email}</option>
+                  ))}
+                </select>
+              </label>
+              <label>Source
+                <select name="source" defaultValue="MANUAL">
+                  {feedbackSources.map((source) => <option key={source} value={source}>{source}</option>)}
+                </select>
+              </label>
+              <label>Priority
+                <select name="priority" defaultValue="MEDIUM">
+                  {feedbackPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                </select>
+              </label>
+              <label>Title<input name="title" required maxLength={200} placeholder="Billing question after App Store purchase" /></label>
+            </div>
+            <label>Content<textarea name="content" required placeholder="Paste the customer feedback exactly as received..." /></label>
+            <label>Metadata JSON<textarea name="metadata" className="code-textarea" defaultValue={'{"channel":"console"}'} /></label>
+          </form>
+          <Panel title={query ? "Search Results" : "Feedback Queue"} action={`${visible.length} visible`}>
+            <FeedbackList items={visible} selectedId={selected?.id} onSelect={(item) => void openFeedback(item)} />
+          </Panel>
+        </div>
+        <Panel title="Feedback Detail" action={selected ? shortId(selected.id) : "No selection"}>
+          {selected ? (
+            <div className="detail-stack">
+              <div>
+                <div className="detail-title-row">
+                  <h3>{selected.title}</h3>
+                  <div className="inline-actions">
+                    <button className="secondary-button" onClick={() => void analyzeSelected()} disabled={loadingDetails}>
+                      <Sparkles size={16} /> Analyze
+                    </button>
+                    <button className="secondary-button" onClick={() => void openFeedback(selected)} disabled={loadingDetails}>
+                      <RefreshCcw size={16} className={loadingDetails ? "spin" : ""} /> Refresh
+                    </button>
+                  </div>
+                </div>
+                <p className="detail-content">{selected.content}</p>
+              </div>
+              <div className="chip-row">
+                <Badge>{selected.source}</Badge>
+                <Badge>{selected.priority}</Badge>
+                <Badge>{selected.status}</Badge>
+                {selected.customerId ? <Badge>{shortId(selected.customerId)}</Badge> : null}
+              </div>
+              <div className="form-grid compact-controls">
+                <label>Status
+                  <select value={selected.status} onChange={(event) => void updateSelected(() => api.updateFeedbackStatus(session, selected.id, event.target.value), "Feedback status updated.")}>
+                    {feedbackStatuses.map((status) => <option key={status} value={status}>{status}</option>)}
+                  </select>
+                </label>
+                <label>Priority
+                  <select value={selected.priority} onChange={(event) => void updateSelected(() => api.updateFeedbackPriority(session, selected.id, event.target.value), "Feedback priority updated.")}>
+                    {feedbackPriorities.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                  </select>
+                </label>
+              </div>
+              <form className="inline-form" onSubmit={(event) => {
+                event.preventDefault();
+                const form = new FormData(event.currentTarget);
+                void updateSelected(() => api.assignFeedback(session, selected.id, form.get("assignedTo")?.toString() ?? ""), "Feedback assigned.");
+              }}>
+                <input name="assignedTo" defaultValue={selected.assignedTo ?? ""} placeholder="Assign owner" />
+                <button className="secondary-button"><Save size={16} /> Save</button>
+              </form>
+              <button className="secondary-button" onClick={() => void updateSelected(
+                () => selected.status === "ARCHIVED" ? api.restoreFeedback(session, selected.id) : api.archiveFeedback(session, selected.id),
+                selected.status === "ARCHIVED" ? "Feedback restored." : "Feedback archived."
+              )}>
+                <Archive size={16} /> {selected.status === "ARCHIVED" ? "Restore" : "Archive"}
+              </button>
+              <div className="ai-panel">
+                <strong>AI Analysis</strong>
+                {selected.aiSummary || selected.sentiment || selected.riskLevel || selected.suggestedAction ? (
+                  <>
+                    <p>{selected.aiSummary ?? "No summary returned yet."}</p>
+                    <div className="chip-row">
+                      {selected.sentiment ? <Badge>{selected.sentiment}</Badge> : null}
+                      {selected.category ? <Badge>{selected.category}</Badge> : null}
+                      {selected.riskLevel ? <Badge>{selected.riskLevel}</Badge> : null}
+                    </div>
+                    {selected.suggestedAction ? <p className="suggested-action">{selected.suggestedAction}</p> : null}
+                  </>
+                ) : <span className="muted">AI enrichment has not completed yet. Refresh after the consumer processes the event.</span>}
+              </div>
+              <form className="inline-form" onSubmit={addNote}>
+                <input name="content" required placeholder="Add internal note" />
+                <button className="secondary-button"><Plus size={16} /> Note</button>
+              </form>
+              <div className="note-list">
+                {notes.length ? notes.map((note) => (
+                  <div className="note-item" key={note.id}>
+                    <strong>{note.author}</strong>
+                    <span>{formatDate(note.createdAt)}</span>
+                    <p>{note.content}</p>
+                  </div>
+                )) : <EmptyState icon={<FileText size={22} />} title="No notes" text="Add the first support note for this feedback." />}
+              </div>
+            </div>
+          ) : <EmptyState icon={<MessageSquareText size={22} />} title="No feedback selected" text="Create or choose feedback to inspect its lifecycle." />}
+        </Panel>
+      </div>
     </section>
   );
 }
@@ -553,23 +765,129 @@ function AutomationView({
   setData: React.Dispatch<React.SetStateAction<AppData>>;
   setNotice: (message: string | null) => void;
 }) {
-  async function createRule() {
+  const [selected, setSelected] = useState<AutomationRule | null>(data.rules[0] ?? null);
+  const [dryRunResult, setDryRunResult] = useState<string | null>(null);
+  const defaultCondition = JSON.stringify({
+    all: [
+      { path: "sentiment", op: "eq", value: "NEGATIVE" },
+      { path: "riskLevel", op: "in", value: ["HIGH", "CHURN_RISK"] }
+    ]
+  }, null, 2);
+  const defaultAction = JSON.stringify([{ type: "LOG", message: "High risk negative feedback detected" }], null, 2);
+  const defaultPayload = JSON.stringify({
+    sentiment: "NEGATIVE",
+    riskLevel: "HIGH",
+    priority: "HIGH",
+    category: "Billing"
+  }, null, 2);
+
+  useEffect(() => {
+    if (!selected && data.rules.length) {
+      setSelected(data.rules[0]);
+    }
+  }, [data.rules, selected]);
+
+  async function createRule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       const rule = await api.createAutomationRule(session, {
-        name: "Log churn risk negative feedback",
-        description: "Created from the web console.",
-        triggerEventType: "feedback.ai-analysis-completed",
-        conditionJson: {
-          all: [
-            { path: "sentiment", op: "eq", value: "NEGATIVE" },
-            { path: "riskLevel", op: "in", value: ["HIGH", "CHURN_RISK"] }
-          ]
-        },
-        actionJson: [{ type: "LOG", message: "High risk negative feedback detected" }],
-        priority: 100
+        name: form.get("name")?.toString(),
+        description: form.get("description")?.toString(),
+        triggerEventType: form.get("triggerEventType")?.toString(),
+        conditionJson: parseJsonObject(form.get("conditionJson")?.toString(), "Condition JSON"),
+        actionJson: parseJsonArray(form.get("actionJson")?.toString(), "Action JSON"),
+        priority: Number(form.get("priority")?.toString() || 0)
       });
+      formElement.reset();
       setData((current) => ({ ...current, rules: [rule, ...current.rules] }));
+      setSelected(rule);
       setNotice("Automation rule created.");
+    } catch (error) {
+      setNotice(toMessage(error));
+    }
+  }
+
+  async function updateRule(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) {
+      return;
+    }
+    const form = new FormData(event.currentTarget);
+    try {
+      const rule = await api.updateAutomationRule(session, selected.id, {
+        name: form.get("name")?.toString(),
+        description: form.get("description")?.toString(),
+        triggerEventType: form.get("triggerEventType")?.toString(),
+        conditionJson: parseJsonObject(form.get("conditionJson")?.toString(), "Condition JSON"),
+        actionJson: parseJsonArray(form.get("actionJson")?.toString(), "Action JSON"),
+        priority: Number(form.get("priority")?.toString() || 0)
+      });
+      setSelected(rule);
+      setData((current) => ({ ...current, rules: replaceById(current.rules, rule) }));
+      setNotice("Automation rule updated.");
+    } catch (error) {
+      setNotice(toMessage(error));
+    }
+  }
+
+  async function toggleRule(rule: AutomationRule) {
+    try {
+      const updated = rule.status === "ACTIVE"
+        ? await api.deactivateAutomationRule(session, rule.id)
+        : await api.activateAutomationRule(session, rule.id);
+      setSelected(updated);
+      setData((current) => ({ ...current, rules: replaceById(current.rules, updated) }));
+      setNotice(updated.status === "ACTIVE" ? "Automation rule activated." : "Automation rule deactivated.");
+    } catch (error) {
+      setNotice(toMessage(error));
+    }
+  }
+  
+  async function deleteRule(rule: AutomationRule) {
+    try {
+      await api.deleteAutomationRule(session, rule.id);
+      setData((current) => ({
+        ...current,
+        rules: current.rules.filter((item) => item.id !== rule.id)
+      }));
+      setSelected((current) => current?.id === rule.id ? null : current);
+      setNotice("Automation rule deleted.");
+    } catch (error) {
+      setNotice(toMessage(error));
+    }
+  }
+
+  async function dryRun(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) {
+      return;
+    }
+    const form = new FormData(event.currentTarget);
+    try {
+      const result = await api.dryRunAutomationRule(
+        session,
+        selected.id,
+        parseJsonObject(form.get("payload")?.toString(), "Dry-run payload")
+      );
+      setDryRunResult(result.matched ? "MATCHED" : "NOT MATCHED");
+    } catch (error) {
+      setNotice(toMessage(error));
+    }
+  }
+
+  async function replay(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selected) {
+      return;
+    }
+    const form = new FormData(event.currentTarget);
+    try {
+      await api.replayAutomationRule(session, selected.id, parseJsonObject(form.get("payload")?.toString(), "Replay payload"));
+      const executions = await api.automationExecutions(session);
+      setData((current) => ({ ...current, executions: executions.content }));
+      setNotice("Automation replay accepted.");
     } catch (error) {
       setNotice(toMessage(error));
     }
@@ -582,35 +900,94 @@ function AutomationView({
           <h2>Automation Rules</h2>
           <p className="muted">Create simple event-driven controls for feedback enrichment.</p>
         </div>
-        <button className="primary-button" onClick={createRule}><Plus size={17} /> Create sample rule</button>
       </div>
-      <div className="split-grid">
-        <Panel title="Rules" action={`${data.rules.length} configured`}>
-          <div className="table-list">
-            {data.rules.length ? data.rules.map((rule) => (
-              <div className="table-row" key={rule.id}>
-                <div>
-                  <strong>{rule.name}</strong>
-                  <span>{rule.triggerEventType} · priority {rule.priority}</span>
+      <div className="work-grid">
+        <div className="content-stack">
+          <form className="form-card dense-form" onSubmit={createRule}>
+            <div className="form-header">
+              <h3>Create Rule</h3>
+              <button className="primary-button"><Plus size={17} /> Create</button>
+            </div>
+            <div className="form-grid">
+              <label>Name<input name="name" required maxLength={160} placeholder="Log high-risk negative feedback" /></label>
+              <label>Trigger event<input name="triggerEventType" required defaultValue="feedback.ai-analysis-completed" /></label>
+              <label>Priority<input name="priority" type="number" defaultValue="100" /></label>
+              <label>Description<input name="description" placeholder="Created from the web console" /></label>
+            </div>
+            <label>Condition JSON<textarea name="conditionJson" className="code-textarea" defaultValue={defaultCondition} /></label>
+            <label>Action JSON<textarea name="actionJson" className="code-textarea" defaultValue={defaultAction} /></label>
+          </form>
+          <Panel title="Rules" action={`${data.rules.length} configured`}>
+            <div className="table-list">
+              {data.rules.length ? data.rules.map((rule) => (
+                <button className={selected?.id === rule.id ? "table-row selectable selected" : "table-row selectable"} key={rule.id} onClick={() => {
+                  setSelected(rule);
+                  setDryRunResult(null);
+                }}>
+                  <div>
+                    <strong>{rule.name}</strong>
+                    <span>{rule.triggerEventType} · priority {rule.priority}</span>
+                  </div>
+                  <Badge>{rule.status}</Badge>
+                </button>
+              )) : <EmptyState icon={<Zap size={22} />} title="No automation rules" text="Create the first rule with the form above." />}
+            </div>
+          </Panel>
+        </div>
+        <div className="content-stack">
+          <Panel title="Rule Detail" action={selected ? shortId(selected.id) : "No selection"}>
+            {selected ? (
+              <div className="detail-stack">
+                <form className="dense-form" onSubmit={updateRule} key={selected.id}>
+                  <div className="form-header">
+                    <h3>Edit Rule</h3>
+                    <button className="secondary-button"><Save size={16} /> Save</button>
+                  </div>
+                  <div className="form-grid">
+                    <label>Name<input name="name" required defaultValue={selected.name} /></label>
+                    <label>Trigger event<input name="triggerEventType" required defaultValue={selected.triggerEventType} /></label>
+                    <label>Priority<input name="priority" type="number" defaultValue={selected.priority} /></label>
+                    <label>Description<input name="description" defaultValue={selected.description ?? ""} /></label>
+                  </div>
+                  <label>Condition JSON<textarea name="conditionJson" className="code-textarea" defaultValue={JSON.stringify(selected.conditionJson, null, 2)} /></label>
+                  <label>Action JSON<textarea name="actionJson" className="code-textarea" defaultValue={JSON.stringify(selected.actionJson, null, 2)} /></label>
+                </form>
+                <button className="secondary-button" onClick={() => void toggleRule(selected)}>
+                  <Archive size={16} /> {selected.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                </button>
+                <button className="secondary-button danger-button" onClick={() => void deleteRule(selected)}>
+                  <Trash2 size={16} /> Delete
+                </button>
+                <div className="ai-panel">
+                  <strong>Rule Payload Tools</strong>
+                  <form className="tool-form" onSubmit={dryRun}>
+                    <label>Dry-run payload<textarea name="payload" className="code-textarea" defaultValue={defaultPayload} /></label>
+                    <button className="secondary-button"><Play size={16} /> Dry run</button>
+                    {dryRunResult ? <Badge>{dryRunResult}</Badge> : null}
+                  </form>
+                  <form className="tool-form" onSubmit={replay}>
+                    <label>Replay payload<textarea name="payload" className="code-textarea" defaultValue={defaultPayload} /></label>
+                    <button className="secondary-button"><Play size={16} /> Replay</button>
+                  </form>
                 </div>
-                <Badge>{rule.status}</Badge>
               </div>
-            )) : <EmptyState icon={<Zap size={22} />} title="No automation rules" text="Start with a sample rule, then tune it from API or later UI forms." />}
-          </div>
-        </Panel>
-        <Panel title="Executions" action={`${data.executions.length} recent`}>
-          <div className="timeline">
-            {data.executions.length ? data.executions.map((execution) => (
-              <div className="timeline-item" key={execution.id}>
-                <CircleDot size={16} />
-                <div>
-                  <strong>{execution.status}</strong>
-                  <span>{execution.sourceEventType} · {shortId(execution.id)}</span>
+            ) : <EmptyState icon={<Zap size={22} />} title="No rule selected" text="Create or choose a rule to manage it." />}
+          </Panel>
+          <Panel title="Executions" action={`${data.executions.length} recent`}>
+            <div className="timeline">
+              {data.executions.length ? data.executions.map((execution) => (
+                <div className="timeline-item" key={execution.id}>
+                  <CircleDot size={16} />
+                  <div>
+                    <strong>{execution.status}</strong>
+                    <span>{execution.sourceEventType} · rule {shortId(execution.ruleId)} · {shortId(execution.id)}</span>
+                    {execution.errorMessage ? <span>{execution.errorMessage}</span> : null}
+                  </div>
                 </div>
-              </div>
-            )) : <EmptyState icon={<ClipboardList size={22} />} title="No executions" text="Executions appear after matching events are consumed." />}
-          </div>
-        </Panel>
+              )) : <EmptyState icon={<ClipboardList size={22} />} title="No executions" text="Executions appear after matching events are consumed." />}
+            </div>
+          </Panel>
+        </div>
       </div>
     </section>
   );
@@ -641,14 +1018,26 @@ function OperationsView({ data }: { data: AppData }) {
   );
 }
 
-function FeedbackList({ items }: { items: Feedback[] }) {
+function FeedbackList({
+  items,
+  selectedId,
+  onSelect
+}: {
+  items: Feedback[];
+  selectedId?: string;
+  onSelect?: (item: Feedback) => void;
+}) {
   if (!items.length) {
     return <EmptyState icon={<MessageSquareText size={22} />} title="No feedback yet" text="Create feedback or adjust your search filters." />;
   }
   return (
     <div className="feedback-list">
       {items.map((item) => (
-        <article className="feedback-card" key={item.id}>
+        <article
+          className={selectedId === item.id ? "feedback-card selectable selected" : "feedback-card selectable"}
+          key={item.id}
+          onClick={() => onSelect?.(item)}
+        >
           <div className="feedback-main">
             <div>
               <strong>{item.title}</strong>
@@ -721,6 +1110,38 @@ function Banner({ message, onClose }: { message: string; onClose: () => void }) 
 
 function shortId(id?: string) {
   return id ? id.slice(0, 8) : "pending";
+}
+
+function formatDate(value?: string) {
+  return value ? new Date(value).toLocaleString() : "";
+}
+
+function replaceById<T extends { id: string }>(items: T[], next: T) {
+  return items.some((item) => item.id === next.id)
+    ? items.map((item) => item.id === next.id ? next : item)
+    : [next, ...items];
+}
+
+function parseJsonObject(value: string | undefined, label: string): Record<string, unknown> {
+  if (!value?.trim()) {
+    return {};
+  }
+  const parsed = JSON.parse(value);
+  if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
+    throw new Error(`${label} must be a JSON object.`);
+  }
+  return parsed as Record<string, unknown>;
+}
+
+function parseJsonArray(value: string | undefined, label: string): Array<Record<string, unknown>> {
+  if (!value?.trim()) {
+    return [];
+  }
+  const parsed = JSON.parse(value);
+  if (!Array.isArray(parsed)) {
+    throw new Error(`${label} must be a JSON array.`);
+  }
+  return parsed as Array<Record<string, unknown>>;
 }
 
 function toMessage(error: unknown) {

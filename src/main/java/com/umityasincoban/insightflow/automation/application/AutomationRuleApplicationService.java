@@ -2,6 +2,7 @@ package com.umityasincoban.insightflow.automation.application;
 
 import com.umityasincoban.insightflow.automation.domain.AutomationRule;
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleId;
+import com.umityasincoban.insightflow.automation.domain.AutomationExecutionRepository;
 import com.umityasincoban.insightflow.automation.domain.AutomationRuleRepository;
 import com.umityasincoban.insightflow.shared.tenancy.CurrentTenantProvider;
 import com.umityasincoban.insightflow.tenancy.domain.TenantId;
@@ -20,6 +21,7 @@ import java.util.UUID;
 public class AutomationRuleApplicationService {
 	
 	private final AutomationRuleRepository automationRuleRepository;
+	private final AutomationExecutionRepository automationExecutionRepository;
 	private final CurrentTenantProvider currentTenantProvider;
 	private final AutomationRulePayloadValidator payloadValidator;
 	private final AutomationConditionEvaluator conditionEvaluator;
@@ -27,12 +29,14 @@ public class AutomationRuleApplicationService {
 	
 	public AutomationRuleApplicationService(
 			AutomationRuleRepository automationRuleRepository,
+			AutomationExecutionRepository automationExecutionRepository,
 			CurrentTenantProvider currentTenantProvider,
 			AutomationRulePayloadValidator payloadValidator,
 			AutomationConditionEvaluator conditionEvaluator,
 			AutomationRuleEvaluationService ruleEvaluationService
 	) {
 		this.automationRuleRepository = automationRuleRepository;
+		this.automationExecutionRepository = automationExecutionRepository;
 		this.currentTenantProvider = currentTenantProvider;
 		this.payloadValidator = payloadValidator;
 		this.conditionEvaluator = conditionEvaluator;
@@ -137,6 +141,20 @@ public class AutomationRuleApplicationService {
 		rule.deactivate();
 		
 		return automationRuleRepository.save(rule);
+	}
+	
+	@Transactional
+	public void deleteRule(UUID ruleId) {
+		TenantId tenantId = currentTenantProvider.getCurrentTenantId();
+		AutomationRuleId automationRuleId = AutomationRuleId.of(ruleId);
+		if (automationRuleRepository.findByTenantIdAndId(tenantId, automationRuleId).isEmpty()) {
+			throw new AutomationRuleNotFoundException(ruleId);
+		}
+		if (automationExecutionRepository.existsByTenantIdAndRuleId(tenantId, automationRuleId)) {
+			throw new AutomationRuleDeletionNotAllowedException(ruleId);
+		}
+		
+		automationRuleRepository.deleteByTenantIdAndId(tenantId, automationRuleId);
 	}
 	
 	@Transactional(readOnly = true)

@@ -43,4 +43,6 @@ public interface AutomationExecutionRepository {
 			AutomationRuleId ruleId,
 			UUID sourceEventId
 	);
+	
+	boolean existsByTenantIdAndRuleId(TenantId tenantId, AutomationRuleId ruleId);
 }

@@ -5,6 +5,7 @@ import com.umityasincoban.insightflow.shared.api.PageResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -84,6 +85,12 @@ public class AutomationRuleController {
 	@PostMapping("/{ruleId}/deactivate")
 	public AutomationRuleResponse deactivateRule(@PathVariable UUID ruleId) {
 		return AutomationRuleResponse.from(automationRuleApplicationService.deactivateRule(ruleId));
+	}
+	
+	@DeleteMapping("/{ruleId}")
+	public ResponseEntity<Void> deleteRule(@PathVariable UUID ruleId) {
+		automationRuleApplicationService.deleteRule(ruleId);
+		return ResponseEntity.noContent().build();
 	}
 	
 	@PostMapping("/{ruleId}/dry-run")
