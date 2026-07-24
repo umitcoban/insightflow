@@ -1013,50 +1013,13 @@ Break tasks into small, reviewable changes.
 
 ## Next Planned Work
 
-The next intended milestone is the Rule Engine v1.
+Automation Rule Engine v1 is implemented. The next intended milestone is MVP finalization:
 
-Suggested task sequence:
+1. Clean the stale git index/worktree entry for the old infrastructure-package `DuplicateAutomationExecutionException`.
+2. Keep README and agent docs aligned with the implemented scope.
+3. Add integration tests for Flyway, JPA mappings, tenant isolation, outbox publishing, Kafka consumers, and automation execution.
+4. Split runtime configuration into local, test, and production profiles.
+5. Add API documentation and a demo runbook.
+6. Choose the first product-completion milestone: real AI adapter, Elasticsearch search, RAG assistant, or Automation DSL v2.
 
-1. Implement Automation Rule create/list API.
-2. Implement rule condition DSL model.
-3. Implement rule evaluator for `all` conditions.
-4. Implement `LOG_ACTION` executor.
-5. Add Kafka consumer handling `feedback.ai-analysis-completed`.
-6. Load active rules by tenant and trigger event type.
-7. Evaluate rules against event payload.
-8. Record automation executions and action executions.
-9. Add HTTP examples.
-10. Add tests.
-
-## Suggested First Codex Task
-
-Implement Automation Rule create/list API.
-
-Requirements:
-
-* Read this file first.
-* Follow existing architecture and style.
-* Add `AutomationRule` domain model.
-* Add `AutomationRuleId` value object.
-* Add `AutomationRuleRepository` port.
-* Add `JpaAutomationRuleRepositoryAdapter`.
-* Add `AutomationRulePersistenceMapper` if needed.
-* Add `AutomationRuleApplicationService`.
-* Add request/response DTOs.
-* Add `AutomationRuleController`.
-* Add endpoints:
-
-    * `POST /api/v1/automation/rules`
-    * `GET /api/v1/automation/rules?page=0&size=20`
-* Use `CurrentTenantProvider`.
-* Require `X-Tenant-Slug`.
-* Store condition JSON as `Map<String, Object>`.
-* Store action JSON as `List<Map<String, Object>>`.
-* Default rule status should be `ACTIVE`.
-* Use existing `PageResponse` pattern.
-* Add exception handling if needed.
-* Temporarily permit `/api/v1/automation/rules/**` in `SecurityConfig`.
-* Add `http/automation-rules.http`.
-* Run `./gradlew clean build`.
-* Do not implement rule evaluation yet.
-* Do not implement action execution yet.
+See `docs/finalization-roadmap.md` for the full checklist.

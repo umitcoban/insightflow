@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/insightflow
+    username: insightflow
+    password: insightflow
+  kafka:
+    bootstrap-servers: localhost:9092
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8081/realms/insightflow
+
+insightflow:
+  security:
+    jwt:
+      issuer-uri: http://localhost:8081/realms/insightflow
+      audience: insightflow-api
+

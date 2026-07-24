@@ -23,6 +23,25 @@ The main goals are:
 - Testcontainers-based integration testing
 - Observability and production-oriented practices
 
+## Implementation Status
+
+| Area | Status |
+| --- | --- |
+| Multi-tenancy | Implemented |
+| Customer API | Implemented |
+| Feedback API | Implemented |
+| Keycloak/JWT security | Implemented |
+| Transactional outbox | Implemented |
+| Kafka event publishing/consuming | Implemented |
+| Mock AI enrichment | Implemented |
+| Automation Rule Engine v1 | Implemented |
+| Elasticsearch feedback search | Planned |
+| Real AI provider adapter | Planned |
+| Tenant-specific RAG assistant | Planned |
+| Production deployment hardening | Planned |
+
+See `docs/finalization-roadmap.md` for the full finalization checklist, `docs/api-reference.md` for the current API surface, and `docs/demo-runbook.md` for an end-to-end local demo flow.
+
 ## Local Security
 
 Local infrastructure runs through Docker Compose:

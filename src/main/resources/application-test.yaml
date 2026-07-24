@@ -1,0 +1,20 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    listener:
+      auto-startup: false
+
+insightflow:
+  outbox:
+    publisher:
+      fixed-delay-ms: 600000
+  automation:
+    webhook:
+      retry:
+        scheduler-fixed-delay-ms: 600000
+

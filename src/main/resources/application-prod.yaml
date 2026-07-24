@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: ${INSIGHTFLOW_DATASOURCE_URL}
+    username: ${INSIGHTFLOW_DATASOURCE_USERNAME}
+    password: ${INSIGHTFLOW_DATASOURCE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  kafka:
+    bootstrap-servers: ${INSIGHTFLOW_KAFKA_BOOTSTRAP_SERVERS}
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${INSIGHTFLOW_SECURITY_JWT_ISSUER_URI}
+
+insightflow:
+  security:
+    jwt:
+      issuer-uri: ${INSIGHTFLOW_SECURITY_JWT_ISSUER_URI}
+      audience: ${INSIGHTFLOW_SECURITY_JWT_AUDIENCE}
+
+logging:
+  level:
+    root: INFO
+
