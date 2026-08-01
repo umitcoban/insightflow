@@ -1,20 +1,17 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Plus, Workflow, Zap } from "lucide-react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { EmptyState } from "../../components/ui/empty-state";
-import { Field, Input, Textarea } from "../../components/ui/input";
 import { PageHeader } from "../../components/ui/page-header";
 import { useToast } from "../../components/ui/toast";
 import { toMessage } from "../../lib/errors";
-import { parseJsonArray, parseJsonObject, prettyJson } from "../../lib/json";
+import { prettyJson } from "../../lib/json";
 import { AutomationExecution } from "./api";
+import { AutomationRuleComposer } from "./components/rule-composer";
 import { useAutomationActionExecutions, useAutomationExecutions, useAutomationMutations, useAutomationRules } from "./hooks";
-
-const defaultCondition = '{\n  "all": [\n    { "path": "sentiment", "op": "eq", "value": "NEGATIVE" }\n  ]\n}';
-const defaultActions = '[\n  { "type": "LOG", "message": "Negative feedback detected" }\n]';
 
 export function AutomationRulesPage() {
   const navigate = useNavigate();
@@ -25,18 +22,9 @@ export function AutomationRulesPage() {
   const mutations = useAutomationMutations();
   const { notify } = useToast();
 
-  async function createRule(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
+  async function createRule(input: Parameters<typeof mutations.create.mutateAsync>[0]) {
     try {
-      const rule = await mutations.create.mutateAsync({
-        name: form.get("name")?.toString(),
-        description: form.get("description")?.toString(),
-        triggerEventType: form.get("triggerEventType")?.toString(),
-        priority: Number(form.get("priority")?.toString() || 0),
-        conditionJson: parseJsonObject(form.get("conditionJson")?.toString() ?? "{}", "Condition JSON"),
-        actionJson: parseJsonArray(form.get("actionJson")?.toString() ?? "[]", "Action JSON")
-      });
+      const rule = await mutations.create.mutateAsync(input);
       notify("Automation rule created");
       navigate(`/app/automation/${rule.id}`);
     } catch (error) {
@@ -47,6 +35,7 @@ export function AutomationRulesPage() {
   return (
     <>
       <PageHeader eyebrow="Automation" title="Rules and executions" description="Create event-driven controls, replay payloads and inspect execution history." actions={<Link to="/app/automation/playground"><Button><Workflow size={16} /> Open playground</Button></Link>} />
+      <AutomationRuleComposer submitLabel="Create rule" submitIcon={<Plus size={16} />} onSubmit={(input) => createRule(input)} />
       <div className="grid gap-5 xl:grid-cols-[1fr_420px]">
         <div className="grid gap-5">
           <Card>
@@ -73,20 +62,6 @@ export function AutomationRulesPage() {
           </Card>
         </div>
         <div className="grid content-start gap-5">
-          <Card>
-            <CardHeader><CardTitle>Create Rule</CardTitle></CardHeader>
-            <CardContent>
-              <form className="grid gap-4" onSubmit={createRule}>
-                <Field label="Name"><Input name="name" required /></Field>
-                <Field label="Description"><Input name="description" /></Field>
-                <Field label="Trigger event"><Input name="triggerEventType" required defaultValue="feedback.ai-analysis-completed" /></Field>
-                <Field label="Priority"><Input name="priority" type="number" defaultValue="100" /></Field>
-                <Field label="Condition JSON"><Textarea name="conditionJson" className="font-mono text-xs" defaultValue={defaultCondition} /></Field>
-                <Field label="Action JSON"><Textarea name="actionJson" className="font-mono text-xs" defaultValue={defaultActions} /></Field>
-                <Button><Plus size={16} /> Create rule</Button>
-              </form>
-            </CardContent>
-          </Card>
           <Card>
             <CardHeader><CardTitle>Execution actions</CardTitle>{selectedExecution ? <Badge>{selectedExecution.status}</Badge> : null}</CardHeader>
             <CardContent className="grid gap-3">

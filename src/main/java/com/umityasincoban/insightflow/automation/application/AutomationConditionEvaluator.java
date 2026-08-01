@@ -52,7 +52,7 @@ public class AutomationConditionEvaluator {
 		Object expectedValue = condition.get("value");
 		return switch (operator) {
 			case "eq" -> actualValue != null && valuesEqual(expectedValue, actualValue);
-			case "neq" -> actualValue == null || !valuesEqual(expectedValue, actualValue);
+			case "neq" -> actualValue != null && !valuesEqual(expectedValue, actualValue);
 			case "in" -> expectedValue instanceof List<?> list && list.stream().anyMatch(value -> valuesEqual(value, actualValue));
 			case "notIn" -> !(expectedValue instanceof List<?> list) || list.stream().noneMatch(value -> valuesEqual(value, actualValue));
 			case "contains" -> actualValue != null && expectedValue != null && actualValue.toString().contains(expectedValue.toString());

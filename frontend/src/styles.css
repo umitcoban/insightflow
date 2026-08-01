@@ -20,6 +20,18 @@ body {
   background: #f8fafc;
 }
 
+.landing-nav {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .landing-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+  }
+}
+
 button,
 input,
 select,
